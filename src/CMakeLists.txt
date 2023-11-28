@@ -5,7 +5,12 @@ project(KinesisVideoWebRTCClient LANGUAGES C)
 file(GLOB_RECURSE HEADERS "include/*.h")
 file(GLOB_RECURSE SOURCE "source/*.c")
 
-set(INCLUDES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+# include components path
+include(source/amazon-kinesis-video-streams-sdp/sdpFilePaths.cmake)
+
+set(INCLUDES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+                  "${SDP_INCLUDE_PUBLIC_DIRS}")
+
 include_directories(${INCLUDES_PATH})
 include_directories(${BP_BUILD_INCLUDE_DIRS})
 link_directories(${BP_BUILD_LIB})

@@ -4,3 +4,6 @@
 [submodule "open-source/amazon-kinesis-video-streams-producer-c"]
 	path = open-source/amazon-kinesis-video-streams-producer-c
 	url = https://github.com/awslabs/amazon-kinesis-video-streams-producer-c.git
+[submodule "src/source/amazon-kinesis-video-streams-sdp"]
+	path = src/source/amazon-kinesis-video-streams-sdp
+	url = https://github.com/ActoryOu/amazon-kinesis-video-streams-sdp

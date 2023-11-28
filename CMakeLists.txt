@@ -317,6 +317,8 @@ if(ENABLE_AWS_SDK_IN_TESTS)
   add_definitions(-DENABLE_AWS_SDK_IN_TESTS)
 endif()
 
+add_definitions(-DSDP_DO_NOT_USE_CUSTOM_CONFIG)
+
 file(
   GLOB
   WEBRTC_CLIENT_SOURCE_FILES
@@ -332,7 +334,7 @@ file(
   "src/source/Rtcp/*.c"
   "src/source/Rtp/*.c"
   "src/source/Rtp/Codecs/*.c"
-  "src/source/Sdp/*.c"
+  "src/source/amazon-kinesis-video-streams-sdp/source/*.c"
   "src/source/Srtp/*.c"
   "src/source/Stun/*.c"
   "src/source/Metrics/*.c")
@@ -345,11 +347,14 @@ endif()
 
 file(GLOB WEBRTC_SIGNALING_CLIENT_SOURCE_FILES "src/source/Signaling/*.c")
 
+# include components path
+include(src/source/amazon-kinesis-video-streams-sdp/sdpFilePaths.cmake)
 
 include_directories(${OPEN_SRC_INCLUDE_DIRS})
 include_directories(${OPEN_SRC_INSTALL_PREFIX}/include)
 include_directories(${KINESIS_VIDEO_WEBRTC_CLIENT_SRC}/src/include)
 include_directories(${KINESIS_VIDEO_WEBRTC_CLIENT_SRC}/src/ice)
+include_directories(${SDP_INCLUDE_PUBLIC_DIRS})
 
 add_library(kvsWebrtcClient ${LINKAGE} ${WEBRTC_CLIENT_SOURCE_FILES} ${DATACHANNEL_SRC})
 
