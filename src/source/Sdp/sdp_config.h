@@ -1,4 +1,6 @@
-
+//
+// Session Description Protocol Configuration
+//
 
 #ifndef __KINESIS_VIDEO_WEBRTC_CLIENT_SDP_SDP_CONFIG__
 #define __KINESIS_VIDEO_WEBRTC_CLIENT_SDP_SDP_CONFIG__
@@ -30,4 +32,4 @@
  */
 #define SDP_PRINT_FMT_UINT8         PRIu8
 
-#endif /* __KINESIS_VIDEO_WEBRTC_CLIENT_SDP_SDP_CONFIG__ */
+#endif //__KINESIS_VIDEO_WEBRTC_CLIENT_SDP_SDP_CONFIG__
