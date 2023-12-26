@@ -1165,13 +1165,13 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     retSignal = Signal_createSignal(&signalContext, pSignalingClient->pChannelInfo->pRegion, strlen(pSignalingClient->pChannelInfo->pRegion),
                                     NULL, 0);
 
-    retSignal = Signal_setChannelEndpointHttps(&signalContext, &pSignalingClient->channelEndpointHttps, strlen(pSignalingClient->channelEndpointHttps));
+    retSignal = Signal_setChannelEndpointHttps(&signalContext, pSignalingClient->channelEndpointHttps, strlen(pSignalingClient->channelEndpointHttps));
     
-    retSignal = Signal_setChannelArn(&signalContext, &pSignalingClient->channelDescription.channelArn, strlen(pSignalingClient->channelDescription.channelArn));
+    retSignal = Signal_setChannelArn(&signalContext, pSignalingClient->channelDescription.channelArn, strlen(pSignalingClient->channelDescription.channelArn));
 
-    retSignal = Signal_setClientId(&signalContext, &pSignalingClient->clientInfo.signalingClientInfo.clientId, strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId));
+    retSignal = Signal_setClientId(&signalContext, pSignalingClient->clientInfo.signalingClientInfo.clientId, strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId));
 
-    retSignal = Signal_getIceConfig(&signalContext, &url, &urlLength, &paramsJson, &paramsJsonLength);
+    retSignal = Signal_getIceConfig(&signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -1217,7 +1217,7 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
         }
 
         if (iceConfigMessage.iceServer[i].pTtl != NULL) {
-            CHK_STATUS(STRTOUI64(iceConfigMessage.iceServer[i].pTtl, iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
+            CHK_STATUS(STRTOUI64((PCHAR)iceConfigMessage.iceServer[i].pTtl, iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
 
             // NOTE: Ttl value is in seconds
             pSignalingClient->iceConfigs[i].ttl = ttl * HUNDREDS_OF_NANOS_IN_A_SECOND;

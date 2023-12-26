@@ -34,14 +34,14 @@ typedef struct SignalContext
 
 typedef struct SignalIceServer
 {
-    char * pPassword;
+    const char * pPassword;
     uint32_t passwordLength;
-    char * pTtl;
+    const char * pTtl;
     uint32_t ttlLength;
-    char * pUris[AWS_ICE_SERVER_MAX_URIS];
+    const char * pUris[AWS_ICE_SERVER_MAX_URIS];
     uint32_t urisLength[AWS_ICE_SERVER_MAX_URIS];
     uint32_t urisNum;
-    char * pUserName;
+    const char * pUserName;
     uint32_t userNameLength;
 } SignalIceServer_t;
 

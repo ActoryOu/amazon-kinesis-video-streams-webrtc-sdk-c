@@ -1,10 +1,11 @@
+#include <stdio.h>
 #include <string.h>
 #include "signal_api.h"
 #include "core_json.h"
 
-static void updateUris(SignalIceServer_t *pIceServer, char * pUris, size_t urisLength);
+static void updateUris(SignalIceServer_t *pIceServer, const char * pUris, size_t urisLength);
 
-static void updateUris(SignalIceServer_t *pIceServer, char * pUris, size_t urisLength)
+static void updateUris(SignalIceServer_t *pIceServer, const char * pUris, size_t urisLength)
 {
     JSONStatus_t jsonResult = JSONSuccess;
     size_t start = 0, next = 0;
@@ -19,8 +20,6 @@ static void updateUris(SignalIceServer_t *pIceServer, char * pUris, size_t urisL
         
         jsonResult = JSON_Iterate( pUris, urisLength, &start, &next, &pair );
     }
-
-    return SIGNAL_RESULT_OK;
 }
 
 SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, uint32_t awsRegionLength, char * pControlPlaneUrl, uint32_t controlPlaneUrlLength )
@@ -47,7 +46,7 @@ SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, ui
 
     if (result == SIGNAL_RESULT_OK) {
         if (pControlPlaneUrl == NULL) {
-            length = snprintf(&pCtx->controlPlaneUrl, AWS_CONTROL_PLANE_URL_MAX_LENGTH, "%s%s.%s%s", AWS_CONTROL_PLANE_URI_PREFIX, AWS_KINESIS_VIDEO_SERVICE_NAME, 
+            length = snprintf(pCtx->controlPlaneUrl, AWS_CONTROL_PLANE_URL_MAX_LENGTH, "%s%s.%s%s", AWS_CONTROL_PLANE_URI_PREFIX, AWS_KINESIS_VIDEO_SERVICE_NAME, 
                               pCtx->region, AWS_CONTROL_PLANE_URI_POSTFIX);
 
             if (length < 0) { //LCOV_EXCL_BR_LINE
@@ -167,10 +166,10 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
     JSONStatus_t jsonResult;
     size_t start = 0, next = 0;
     JSONPair_t pair = { 0 };
-    char *pIceServerListBuffer;
+    const char *pIceServerListBuffer;
     uint32_t iceServerListBufferLength;
     size_t iceServerListStart = 0, iceServerListNext = 0;
-    char *pIceSingleServerBuffer;
+    const char *pIceSingleServerBuffer;
     uint32_t iceSingleServerBufferLength;
     size_t iceSingleServerStart = 0, iceSingleServerNext = 0;
 
