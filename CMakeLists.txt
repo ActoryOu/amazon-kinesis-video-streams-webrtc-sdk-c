@@ -317,6 +317,12 @@ if(ENABLE_AWS_SDK_IN_TESTS)
   add_definitions(-DENABLE_AWS_SDK_IN_TESTS)
 endif()
 
+# include components path
+include(src/source/Sdp/amazon-kinesis-video-streams-sdp/sdpFilePaths.cmake)
+include(src/source/Signaling/amazon-kinesis-video-streams-signal/signalFilePaths.cmake)
+# include sdp_config.h
+include_directories(src/source/Sdp)
+
 file(
   GLOB
   WEBRTC_CLIENT_SOURCE_FILES
@@ -346,16 +352,12 @@ endif()
 
 file(GLOB WEBRTC_SIGNALING_CLIENT_SOURCE_FILES "src/source/Signaling/*.c")
 
-# include components path
-include(src/source/Sdp/amazon-kinesis-video-streams-sdp/sdpFilePaths.cmake)
-# include sdp_config.h
-include_directories(src/source/Sdp)
-
 include_directories(${OPEN_SRC_INCLUDE_DIRS})
 include_directories(${OPEN_SRC_INSTALL_PREFIX}/include)
 include_directories(${KINESIS_VIDEO_WEBRTC_CLIENT_SRC}/src/include)
 include_directories(${KINESIS_VIDEO_WEBRTC_CLIENT_SRC}/src/ice)
 include_directories(${SDP_INCLUDE_PUBLIC_DIRS})
+include_directories(${SIGNAL_INCLUDE_PUBLIC_DIRS})
 
 add_library(kvsWebrtcClient ${LINKAGE} ${WEBRTC_CLIENT_SOURCE_FILES} ${DATACHANNEL_SRC})
 
@@ -377,7 +379,7 @@ target_link_libraries(
           ${GPERFTOOLS_PROFILER_LIBRARIES}
           ${EXTRA_DEPS})
 
-add_library(kvsWebrtcSignalingClient ${LINKAGE} ${WEBRTC_SIGNALING_CLIENT_SOURCE_FILES})
+add_library(kvsWebrtcSignalingClient ${LINKAGE} ${WEBRTC_SIGNALING_CLIENT_SOURCE_FILES} ${SIGNAL_SOURCES})
 
 if(USE_MBEDTLS)
   target_compile_definitions(kvsWebrtcSignalingClient PRIVATE LWS_WITH_MBEDTLS)

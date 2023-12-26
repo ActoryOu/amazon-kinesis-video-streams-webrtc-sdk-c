@@ -4,6 +4,9 @@
 #define LOG_CLASS "LwsApiCalls"
 #include "../Include_i.h"
 #define WEBRTC_SCHEME_NAME "webrtc"
+#include "signal_api.h"
+
+static SignalContext_t signalContext;
 
 static BOOL gInterruptedFlagBySignalHandler;
 VOID lwsSignalHandler(INT32 signal)
@@ -1148,7 +1151,10 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     UINT32 i, strLen, resultLen, configCount = 0, tokenCount;
     INT32 j;
     UINT64 ttl;
-    BOOL jsonInIceServerList = FALSE;
+    SignalResult_t retSignal;
+    uint32_t urlLength = sizeof(url);
+    uint32_t paramsJsonLength = sizeof(paramsJson);
+    SignalIceConfigMessage_t iceConfigMessage;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelEndpointHttps[0] != '\0', STATUS_INTERNAL_ERROR);
@@ -1156,13 +1162,16 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     // Update the diagnostics info on the number of ICE refresh calls
     ATOMIC_INCREMENT(&pSignalingClient->diagnostics.iceRefreshCount);
 
-    // Create the API url
-    STRCPY(url, pSignalingClient->channelEndpointHttps);
-    STRCAT(url, GET_ICE_CONFIG_API_POSTFIX);
+    retSignal = Signal_createSignal(&signalContext, pSignalingClient->pChannelInfo->pRegion, strlen(pSignalingClient->pChannelInfo->pRegion),
+                                    NULL, 0);
 
-    // Prepare the json params for the call
-    SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), GET_ICE_CONFIG_PARAM_JSON_TEMPLATE, pSignalingClient->channelDescription.channelArn,
-             pSignalingClient->clientInfo.signalingClientInfo.clientId);
+    retSignal = Signal_setChannelEndpointHttps(&signalContext, &pSignalingClient->channelEndpointHttps, strlen(pSignalingClient->channelEndpointHttps));
+    
+    retSignal = Signal_setChannelArn(&signalContext, &pSignalingClient->channelDescription.channelArn, strlen(pSignalingClient->channelDescription.channelArn));
+
+    retSignal = Signal_setClientId(&signalContext, &pSignalingClient->clientInfo.signalingClientInfo.clientId, strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId));
+
+    retSignal = Signal_getIceConfig(&signalContext, &url, &urlLength, &paramsJson, &paramsJsonLength);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -1190,66 +1199,45 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     // Early return if we have a non-success result
     CHK((SERVICE_CALL_RESULT) ATOMIC_LOAD(&pSignalingClient->result) == SERVICE_CALL_RESULT_OK && resultLen != 0 && pResponseStr != NULL,
         STATUS_SIGNALING_LWS_CALL_FAILED);
+    
+    retSignal = Signal_parseIceConfigMessage( &signalContext, pResponseStr, resultLen, &iceConfigMessage );
 
     // Parse the response
-    jsmn_init(&parser);
-    tokenCount = jsmn_parse(&parser, pResponseStr, resultLen, tokens, SIZEOF(tokens) / SIZEOF(jsmntok_t));
-    CHK(tokenCount > 1, STATUS_INVALID_API_CALL_RETURN_JSON);
-    CHK(tokens[0].type == JSMN_OBJECT, STATUS_INVALID_API_CALL_RETURN_JSON);
+    for (i = 0; i < iceConfigMessage.iceServerNum; i++) {
+        if (iceConfigMessage.iceServer[i].pUserName != NULL) {
+            CHK(iceConfigMessage.iceServer[i].userNameLength <= MAX_ICE_CONFIG_USER_NAME_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
+            STRNCPY(pSignalingClient->iceConfigs[i].userName, iceConfigMessage.iceServer[i].pUserName, iceConfigMessage.iceServer[i].userNameLength);
+            pSignalingClient->iceConfigs[i].userName[MAX_ICE_CONFIG_USER_NAME_LEN] = '\0';
+        }
 
-    MEMSET(&pSignalingClient->iceConfigs, 0x00, MAX_ICE_CONFIG_COUNT * SIZEOF(IceConfigInfo));
-    pSignalingClient->iceConfigCount = 0;
+        if (iceConfigMessage.iceServer[i].pPassword != NULL) {
+            CHK(iceConfigMessage.iceServer[i].passwordLength <= MAX_ICE_CONFIG_CREDENTIAL_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
+            STRNCPY(pSignalingClient->iceConfigs[i].password, iceConfigMessage.iceServer[i].pPassword, iceConfigMessage.iceServer[i].passwordLength);
+            pSignalingClient->iceConfigs[i].password[MAX_ICE_CONFIG_USER_NAME_LEN] = '\0';
+        }
 
-    // Loop through the tokens and extract the ice configuration
-    for (i = 0; i < tokenCount; i++) {
-        if (!jsonInIceServerList) {
-            if (compareJsonString(pResponseStr, &tokens[i], JSMN_STRING, (PCHAR) "IceServerList")) {
-                jsonInIceServerList = TRUE;
+        if (iceConfigMessage.iceServer[i].pTtl != NULL) {
+            CHK_STATUS(STRTOUI64(iceConfigMessage.iceServer[i].pTtl, iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
 
-                CHK(tokens[i + 1].type == JSMN_ARRAY, STATUS_INVALID_API_CALL_RETURN_JSON);
-                CHK(tokens[i + 1].size <= MAX_ICE_CONFIG_COUNT, STATUS_SIGNALING_MAX_ICE_CONFIG_COUNT);
-            }
-        } else {
-            pToken = &tokens[i];
-            if (pToken->type == JSMN_OBJECT) {
-                configCount++;
-            } else if (compareJsonString(pResponseStr, pToken, JSMN_STRING, (PCHAR) "Username")) {
-                strLen = (UINT32) (pToken[1].end - pToken[1].start);
-                CHK(strLen <= MAX_ICE_CONFIG_USER_NAME_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-                STRNCPY(pSignalingClient->iceConfigs[configCount - 1].userName, pResponseStr + pToken[1].start, strLen);
-                pSignalingClient->iceConfigs[configCount - 1].userName[MAX_ICE_CONFIG_USER_NAME_LEN] = '\0';
-                i++;
-            } else if (compareJsonString(pResponseStr, pToken, JSMN_STRING, (PCHAR) "Password")) {
-                strLen = (UINT32) (pToken[1].end - pToken[1].start);
-                CHK(strLen <= MAX_ICE_CONFIG_CREDENTIAL_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-                STRNCPY(pSignalingClient->iceConfigs[configCount - 1].password, pResponseStr + pToken[1].start, strLen);
-                pSignalingClient->iceConfigs[configCount - 1].userName[MAX_ICE_CONFIG_CREDENTIAL_LEN] = '\0';
-                i++;
-            } else if (compareJsonString(pResponseStr, pToken, JSMN_STRING, (PCHAR) "Ttl")) {
-                CHK_STATUS(STRTOUI64(pResponseStr + pToken[1].start, pResponseStr + pToken[1].end, 10, &ttl));
+            // NOTE: Ttl value is in seconds
+            pSignalingClient->iceConfigs[i].ttl = ttl * HUNDREDS_OF_NANOS_IN_A_SECOND;
+        }
 
-                // NOTE: Ttl value is in seconds
-                pSignalingClient->iceConfigs[configCount - 1].ttl = ttl * HUNDREDS_OF_NANOS_IN_A_SECOND;
-                i++;
-            } else if (compareJsonString(pResponseStr, pToken, JSMN_STRING, (PCHAR) "Uris")) {
-                // Expect an array of elements
-                CHK(pToken[1].type == JSMN_ARRAY, STATUS_INVALID_API_CALL_RETURN_JSON);
-                CHK(pToken[1].size <= MAX_ICE_CONFIG_URI_COUNT, STATUS_SIGNALING_MAX_ICE_URI_COUNT);
-                for (j = 0; j < pToken[1].size; j++) {
-                    strLen = (UINT32) (pToken[j + 2].end - pToken[j + 2].start);
-                    CHK(strLen <= MAX_ICE_CONFIG_URI_LEN, STATUS_SIGNALING_MAX_ICE_URI_LEN);
-                    STRNCPY(pSignalingClient->iceConfigs[configCount - 1].uris[j], pResponseStr + pToken[j + 2].start, strLen);
-                    pSignalingClient->iceConfigs[configCount - 1].uris[j][MAX_ICE_CONFIG_URI_LEN] = '\0';
-                    pSignalingClient->iceConfigs[configCount - 1].uriCount++;
-                }
+        if (iceConfigMessage.iceServer[i].pUris[0] != NULL) {
+            CHK(iceConfigMessage.iceServer[i].urisNum <= MAX_ICE_CONFIG_URI_COUNT, STATUS_SIGNALING_MAX_ICE_URI_COUNT);
 
-                i += pToken[1].size + 1;
+            for (j=0 ; j<iceConfigMessage.iceServer[i].urisNum ; j++) {
+                CHK(iceConfigMessage.iceServer[i].urisLength[j] <= MAX_ICE_CONFIG_URI_LEN, STATUS_SIGNALING_MAX_ICE_URI_LEN);
+
+                STRNCPY(pSignalingClient->iceConfigs[i].uris[j], iceConfigMessage.iceServer[i].pUris[j], iceConfigMessage.iceServer[i].urisLength[j]);
+                pSignalingClient->iceConfigs[i].uris[j][MAX_ICE_CONFIG_URI_LEN] = '\0';
+                pSignalingClient->iceConfigs[i].uriCount++;
             }
         }
     }
 
     // Perform some validation on the ice configuration
-    pSignalingClient->iceConfigCount = configCount;
+    pSignalingClient->iceConfigCount = iceConfigMessage.iceServerNum;
     CHK_STATUS(validateIceConfiguration(pSignalingClient));
 
 CleanUp:
