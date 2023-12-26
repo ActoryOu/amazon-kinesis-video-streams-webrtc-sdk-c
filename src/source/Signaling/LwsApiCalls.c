@@ -1200,7 +1200,9 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     CHK((SERVICE_CALL_RESULT) ATOMIC_LOAD(&pSignalingClient->result) == SERVICE_CALL_RESULT_OK && resultLen != 0 && pResponseStr != NULL,
         STATUS_SIGNALING_LWS_CALL_FAILED);
     
-    retSignal = Signal_parseIceConfigMessage( &signalContext, pResponseStr, resultLen, &iceConfigMessage );
+    retSignal = Signal_parseIceConfigMessage( &signalContext, pResponseStr, resultLen, &iceConfigMessage );    
+    MEMSET(&pSignalingClient->iceConfigs, 0x00, MAX_ICE_CONFIG_COUNT * SIZEOF(IceConfigInfo));
+    pSignalingClient->iceConfigCount = 0;
 
     // Parse the response
     for (i = 0; i < iceConfigMessage.iceServerNum; i++) {
@@ -1217,7 +1219,7 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
         }
 
         if (iceConfigMessage.iceServer[i].pTtl != NULL) {
-            CHK_STATUS(STRTOUI64((PCHAR)iceConfigMessage.iceServer[i].pTtl, iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
+            CHK_STATUS(STRTOUI64((PCHAR)iceConfigMessage.iceServer[i].pTtl, (PCHAR)iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
 
             // NOTE: Ttl value is in seconds
             pSignalingClient->iceConfigs[i].ttl = ttl * HUNDREDS_OF_NANOS_IN_A_SECOND;

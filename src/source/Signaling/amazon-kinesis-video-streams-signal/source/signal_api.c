@@ -130,13 +130,17 @@ SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, uint32_t
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = pCtx->channelEndpointHttpsLength + strlen(AWS_GET_ICE_CONFIG_API_POSTFIX);
+        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+                          pCtx->channelEndpointHttpsLength, pCtx->channelEndpointHttps,
+                          (int) strlen(AWS_GET_ICE_CONFIG_API_POSTFIX), AWS_GET_ICE_CONFIG_API_POSTFIX);
 
-        if (length > *pUrlLength) {
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
             result = SIGNAL_RESULT_OUT_OF_MEMORY;
-        } else {
-            strncpy(pUrl, pCtx->channelEndpointHttps, pCtx->channelEndpointHttpsLength);
-            strcat(pUrl, AWS_GET_ICE_CONFIG_API_POSTFIX);
+        }
+        else {
             *pUrlLength = length;
         }
     }
