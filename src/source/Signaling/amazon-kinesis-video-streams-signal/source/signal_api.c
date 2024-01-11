@@ -1,3 +1,4 @@
+/* Standard includes. */
 #include <stdio.h>
 #include <string.h>
 #include "signal_api.h"
@@ -22,13 +23,13 @@ static void updateUris(SignalIceServer_t *pIceServer, const char * pUris, size_t
     }
 }
 
-SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, uint32_t awsRegionLength, char * pControlPlaneUrl, uint32_t controlPlaneUrlLength )
+SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, uint32_t awsRegionLength, char * pControlPlaneUrl, uint32_t controlPlaneUrlLength, char * pChannelName, uint32_t channelNameLength )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;
     int length = 0;
 
     /* input check */
-    if (pCtx == NULL) {
+    if (pCtx == NULL || pChannelName == NULL) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
 
@@ -62,6 +63,11 @@ SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, ui
             pCtx->controlPlaneUrlLength = controlPlaneUrlLength;
             memcpy(pCtx->controlPlaneUrl, pControlPlaneUrl, pCtx->controlPlaneUrlLength);
         }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        pCtx->channelNameLength = channelNameLength;
+        memcpy(pCtx->channelName, pChannelName, pCtx->channelNameLength);
     }
 
     return result;
@@ -113,6 +119,146 @@ SignalResult_t Signal_setClientId( SignalContext_t *pCtx, char * pClientId, uint
     if (result == SIGNAL_RESULT_OK) {
         pCtx->clientIdLength = clientIdLength;
         memcpy(pCtx->clientId, pClientId, pCtx->clientIdLength);
+    }
+
+    return result;
+}
+
+SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, uint32_t * pUrlLength, char *pBody, uint32_t * pBodyLength )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+
+    /* input check */
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // calculate the length of url
+        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+                          pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
+                          (int) strlen(AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX), AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pUrlLength = length;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // Prepare the body for the call
+        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE, pCtx->channelName);
+        
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pBodyLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pBodyLength = length;
+        }
+    }
+
+    return result;
+}
+
+SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char * pMessage, uint32_t messageLength, SignalDescribeChannel_t *pDescribeChannel )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    JSONStatus_t jsonResult;
+    size_t start = 0, next = 0;
+    JSONPair_t pair = { 0 };
+    const char *pChannelInfoBuffer;
+    uint32_t channelInfoBufferLength;
+    size_t channelInfoStart = 0, channelInfoNext = 0;
+
+    /* input check */
+    if (pCtx == NULL || pMessage == NULL || pDescribeChannel == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        jsonResult = JSON_Validate(pMessage, messageLength);
+
+        if (jsonResult != JSONSuccess) {
+            result = SIGNAL_RESULT_INVALID_JSON;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        memset(pDescribeChannel, 0, sizeof(SignalDescribeChannel_t));
+
+        /* Check if it's ChannelInfo. */
+        jsonResult = JSON_Iterate( pMessage, messageLength, &start, &next, &pair );
+
+        if (jsonResult == JSONSuccess) {
+            if (pair.jsonType != JSONObject || 
+                pair.keyLength != strlen("ChannelInfo") || 
+                strncmp(pair.key, "ChannelInfo", pair.keyLength)) {
+                /* Not an ice server list meesage. */
+                result = SIGNAL_RESULT_INVALID_JSON;
+            } else {
+                pChannelInfoBuffer = pair.value;
+                channelInfoBufferLength = pair.valueLength;
+            }
+        } else {
+            result = SIGNAL_RESULT_INVALID_JSON;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        jsonResult = JSON_Iterate(pChannelInfoBuffer, channelInfoBufferLength, &channelInfoStart, &channelInfoNext, &pair);
+
+        while (jsonResult == JSONSuccess) {
+            if (strncmp(pair.key, "ChannelARN", pair.keyLength) == 0) {
+                pDescribeChannel->pChannelArn = pair.value;
+                pDescribeChannel->channelArnLength = pair.valueLength;
+            } else if (strncmp(pair.key, "ChannelName", pair.keyLength) == 0) {
+                pDescribeChannel->pChannelName = pair.value;
+                pDescribeChannel->channelNameLength = pair.valueLength;
+            } else if (strncmp(pair.key, "ChannelStatus", pair.keyLength) == 0) {
+                pDescribeChannel->pChannelStatus = pair.value;
+                pDescribeChannel->channelStatusLength = pair.valueLength;
+            } else if (strncmp(pair.key, "ChannelType", pair.keyLength) == 0) {
+                pDescribeChannel->pChannelType = pair.value;
+                pDescribeChannel->channelTypeLength = pair.valueLength;
+            } else if (strncmp(pair.key, "CreationTime", pair.keyLength) == 0) {
+                // TODO: In the future parse out the creation time but currently we don't need it
+            } else if (strncmp(pair.key, "SingleMasterConfiguration", pair.keyLength) == 0) {
+                const char *pBuffer = pair.value;
+                uint32_t bufferLength = pair.valueLength;
+                size_t bufferStart = 0, bufferNext = 0;
+
+                jsonResult = JSON_Iterate( pBuffer, bufferLength, &bufferStart, &bufferNext, &pair );
+
+                if (jsonResult == JSONSuccess) {
+                    if (strncmp(pair.key, "MessageTtlSeconds", pair.keyLength) == 0) {
+                        pDescribeChannel->pMessageTtlSeconds = pair.value;
+                        pDescribeChannel->messageTtlSecondsLength = pair.valueLength;
+                    } else {
+                        // unknown attribute
+                        result = SIGNAL_RESULT_INVALID_JSON;
+                    }
+                } else {
+                    // invalid single master configuration
+                    result = SIGNAL_RESULT_INVALID_JSON;
+                }
+            } else if (strncmp(pair.key, "Version", pair.keyLength) == 0) {
+                pDescribeChannel->pVersion = pair.value;
+                pDescribeChannel->versionLength = pair.valueLength;
+            } else {
+                /* Skip unknown attributes. */
+            }
+            
+            jsonResult = JSON_Iterate(pChannelInfoBuffer, channelInfoBufferLength, &channelInfoStart, &channelInfoNext, &pair);
+        }
     }
 
     return result;

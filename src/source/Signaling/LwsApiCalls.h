@@ -27,10 +27,8 @@ extern "C" {
 
 // API postfix definitions
 #define CREATE_SIGNALING_CHANNEL_API_POSTFIX       "/createSignalingChannel"
-#define DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX     "/describeSignalingChannel"
 #define GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
-#define GET_ICE_CONFIG_API_POSTFIX                 "/v1/get-ice-server-config"
 #define JOIN_STORAGE_SESSION_API_POSTFIX           "/joinStorageSession"
 #define DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX    "/describeMediaStorageConfiguration"
 #define UPDATE_MEDIA_STORAGE_CONF_API_POSTFIX      "/updateMediaStorageConfiguration"
@@ -40,7 +38,6 @@ extern "C" {
 #define SIGNALING_CHANNEL_PROTOCOL_W_MEDIA_STORAGE "\"WSS\", \"HTTPS\", \"WEBRTC\""
 
 // Parameterized string for Describe Channel API
-#define DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE            "{\n\t\"ChannelName\": \"%s\"\n}"
 #define DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%s\"\n}"
 
 // Parameterized string for Delete Channel API

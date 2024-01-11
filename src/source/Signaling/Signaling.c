@@ -1,5 +1,6 @@
 #define LOG_CLASS "Signaling"
 #include "../Include_i.h"
+#include "signal_api.h"
 
 extern StateMachineState SIGNALING_STATE_MACHINE_STATES[];
 extern UINT32 SIGNALING_STATE_MACHINE_STATE_COUNT;
@@ -20,6 +21,7 @@ STATUS createSignalingSync(PSignalingClientInfoInternal pClientInfo, PChannelInf
     PStateMachineState pStateMachineState;
     BOOL cacheFound = FALSE;
     PSignalingFileCacheEntry pFileCacheEntry = NULL;
+    SignalResult_t retSignal;
 
     CHK(pClientInfo != NULL && pChannelInfo != NULL && pCallbacks != NULL && pCredentialProvider != NULL && ppSignalingClient != NULL,
         STATUS_NULL_ARG);
@@ -162,6 +164,12 @@ STATUS createSignalingSync(PSignalingClientInfoInternal pClientInfo, PChannelInf
 
     pSignalingClient->diagnosticsLock = MUTEX_CREATE(TRUE);
     CHK(IS_VALID_MUTEX_VALUE(pSignalingClient->diagnosticsLock), STATUS_INVALID_OPERATION);
+
+    retSignal = Signal_createSignal(&pSignalingClient->signalContext,
+                                    pSignalingClient->pChannelInfo->pRegion, strlen(pSignalingClient->pChannelInfo->pRegion),
+                                    NULL, 0,
+                                    pSignalingClient->pChannelInfo->pChannelName, strlen(pSignalingClient->pChannelInfo->pChannelName));
+    CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_OPERATION);
 
     // Create the ongoing message list
     CHK_STATUS(stackQueueCreate(&pSignalingClient->pMessageQueue));
