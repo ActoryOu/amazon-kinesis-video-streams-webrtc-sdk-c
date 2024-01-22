@@ -30,15 +30,11 @@ extern "C" {
 #define GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
 #define JOIN_STORAGE_SESSION_API_POSTFIX           "/joinStorageSession"
-#define DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX    "/describeMediaStorageConfiguration"
 #define UPDATE_MEDIA_STORAGE_CONF_API_POSTFIX      "/updateMediaStorageConfiguration"
 
 // Signaling protocol name
 #define SIGNALING_CHANNEL_PROTOCOL                 "\"WSS\", \"HTTPS\""
 #define SIGNALING_CHANNEL_PROTOCOL_W_MEDIA_STORAGE "\"WSS\", \"HTTPS\", \"WEBRTC\""
-
-// Parameterized string for Describe Channel API
-#define DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%s\"\n}"
 
 // Parameterized string for Delete Channel API
 #define DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \

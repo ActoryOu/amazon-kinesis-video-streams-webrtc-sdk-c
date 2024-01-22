@@ -40,6 +40,7 @@ typedef enum SignalResult
 
 #define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
 #define AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX "/describeSignalingChannel"
+#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX "/describeMediaStorageConfiguration"
 
 // Parameterized string for Get Ice Server Config API
 #define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
@@ -48,7 +49,11 @@ typedef enum SignalResult
     "\n\t\"Service\": \"TURN\""                                                                                                                      \
     "\n}"
 
+// Parameterized string for Describe Channel API
 #define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%s\"\n}"
+
+// Parameterized string for Desceibe Media Storage Config API
+#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%s\"\n}"
 
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
@@ -81,6 +86,32 @@ typedef struct SignalContext
     uint32_t clientIdLength;
 } SignalContext_t;
 
+typedef struct SignalDescribeChannel
+{
+    const char * pChannelArn;
+    uint32_t channelArnLength;
+    const char * pChannelName;
+    uint32_t channelNameLength;
+    const char * pChannelStatus;
+    uint32_t channelStatusLength;
+    const char * pChannelType;
+    uint32_t channelTypeLength;
+    const char * pVersion;
+    uint32_t versionLength;
+    const char * pCreationTime;
+    uint32_t creationTimeLength;
+    const char * pMessageTtlSeconds;
+    uint32_t messageTtlSecondsLength;
+} SignalDescribeChannel_t;
+
+typedef struct SignalMediaStorageConfig
+{
+    const char * pStatus;
+    uint32_t statusLength;
+    const char * pStreamArn;
+    uint32_t streamArnLength;
+} SignalMediaStorageConfig_t;
+
 typedef struct SignalIceServer
 {
     const char * pPassword;
@@ -99,24 +130,6 @@ typedef struct SignalIceConfigMessage
     SignalIceServer_t iceServer[AWS_ICE_SERVER_MAX_NUM];
     uint32_t iceServerNum;
 } SignalIceConfigMessage_t;
-
-typedef struct SignalDescribeChannel
-{
-    const char * pChannelArn;
-    uint32_t channelArnLength;
-    const char * pChannelName;
-    uint32_t channelNameLength;
-    const char * pChannelStatus;
-    uint32_t channelStatusLength;
-    const char * pChannelType;
-    uint32_t channelTypeLength;
-    const char * pVersion;
-    uint32_t versionLength;
-    const char * pCreationTime;
-    uint32_t creationTimeLength;
-    const char * pMessageTtlSeconds;
-    uint32_t messageTtlSecondsLength;
-} SignalDescribeChannel_t;
 
 /*-----------------------------------------------------------*/
 

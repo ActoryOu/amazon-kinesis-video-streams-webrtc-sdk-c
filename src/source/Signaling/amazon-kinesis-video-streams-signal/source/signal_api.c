@@ -264,6 +264,116 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
     return result;
 }
 
+SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, uint32_t * pUrlLength, char *pBody, uint32_t * pBodyLength )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+
+    /* input check */
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // calculate the length of url
+        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+                          pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
+                          (int) strlen(AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX), AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pUrlLength = length;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // Prepare the body for the call
+        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE, pCtx->channelArn);
+        
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pBodyLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pBodyLength = length;
+        }
+    }
+
+    return result;
+}
+
+SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, char * pMessage, uint32_t messageLength, SignalMediaStorageConfig_t *pMediaStorageConfig )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    JSONStatus_t jsonResult;
+    size_t start = 0, next = 0;
+    JSONPair_t pair = { 0 };
+    const char *pMediaStorageConfigBuffer;
+    uint32_t mediaStorageConfigBufferLength;
+    size_t mediaStorageConfigStart = 0, mediaStorageConfigNext = 0;
+
+    /* input check */
+    if (pCtx == NULL || pMessage == NULL || pMediaStorageConfig == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        jsonResult = JSON_Validate(pMessage, messageLength);
+
+        if (jsonResult != JSONSuccess) {
+            result = SIGNAL_RESULT_INVALID_JSON;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        memset(pMediaStorageConfig, 0, sizeof(SignalMediaStorageConfig_t));
+
+        /* Check if it's MediaStorageConfiguration. */
+        jsonResult = JSON_Iterate( pMessage, messageLength, &start, &next, &pair );
+
+        if (jsonResult == JSONSuccess) {
+            if (pair.jsonType != JSONArray || 
+                pair.keyLength != strlen("MediaStorageConfiguration") || 
+                strncmp(pair.key, "MediaStorageConfiguration", pair.keyLength)) {
+                /* Not an ice server list meesage. */
+                result = SIGNAL_RESULT_INVALID_JSON;
+            } else {
+                pMediaStorageConfigBuffer = pair.value;
+                mediaStorageConfigBufferLength = pair.valueLength;
+            }
+        } else {
+            result = SIGNAL_RESULT_INVALID_JSON;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        jsonResult = JSON_Iterate(pMediaStorageConfigBuffer, mediaStorageConfigBufferLength, &mediaStorageConfigStart, &mediaStorageConfigNext, &pair);
+
+        while (jsonResult == JSONSuccess) {
+            if (strncmp(pair.key, "Status", pair.keyLength) == 0) {
+                pMediaStorageConfig->pStatus = pair.value;
+                pMediaStorageConfig->statusLength = pair.valueLength;
+            } else if (strncmp(pair.key, "StreamARN", pair.keyLength) == 0) {
+                pMediaStorageConfig->pStreamArn = pair.value;
+                pMediaStorageConfig->streamArnLength = pair.valueLength;
+            } else {
+                /* Skip unknown attributes. */
+            }
+            
+            jsonResult = JSON_Iterate(pMediaStorageConfigBuffer, mediaStorageConfigBufferLength, &mediaStorageConfigStart, &mediaStorageConfigNext, &pair);
+        }
+    }
+
+    return result;
+}
+
 SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, uint32_t * pUrlLength, char *pBody, uint32_t * pBodyLength )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;

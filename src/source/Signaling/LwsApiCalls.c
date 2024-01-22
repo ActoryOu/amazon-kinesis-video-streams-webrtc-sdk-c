@@ -1534,16 +1534,16 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
     UINT32 i, strLen, resultLen;
     UINT32 tokenCount;
     BOOL jsonInMediaStorageConfig = FALSE;
+    SignalResult_t retSignal;
+    uint32_t urlLength = sizeof(url);
+    uint32_t paramsJsonLength = sizeof(paramsJson);
+    SignalMediaStorageConfig_t mediaStorageConfig;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
 
     // Create the API url
-    STRCPY(url, pSignalingClient->pChannelInfo->pControlPlaneUrl);
-    STRCAT(url, DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX);
+    retSignal = Signal_getDescribeChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
 
-    // Prepare the json params for the call
-    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_NULL_ARG);
-    SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE, pSignalingClient->channelDescription.channelArn);
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
                                  SSL_CERTIFICATE_TYPE_NOT_SPECIFIED, pSignalingClient->pChannelInfo->pUserAgent,
@@ -1572,40 +1572,27 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
     CHK((SERVICE_CALL_RESULT) ATOMIC_LOAD(&pSignalingClient->result) == SERVICE_CALL_RESULT_OK && resultLen != 0 && pResponseStr != NULL,
         STATUS_SIGNALING_LWS_CALL_FAILED);
 
-    // Parse the response
-    jsmn_init(&parser);
-    tokenCount = jsmn_parse(&parser, pResponseStr, resultLen, tokens, SIZEOF(tokens) / SIZEOF(jsmntok_t));
-    CHK(tokenCount > 1, STATUS_INVALID_API_CALL_RETURN_JSON);
-    CHK(tokens[0].type == JSMN_OBJECT, STATUS_INVALID_API_CALL_RETURN_JSON);
+    retSignal = Signal_parseMediaStorageConfigMessage( &pSignalingClient->signalContext, pResponseStr, resultLen, &mediaStorageConfig );
+    CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_API_CALL_RETURN_JSON);
 
-    // Loop through the tokens and extract the stream description
-    for (i = 1; i < tokenCount; i++) {
-        if (!jsonInMediaStorageConfig) {
-            if (compareJsonString(pResponseStr, &tokens[i], JSMN_STRING, (PCHAR) "MediaStorageConfiguration")) {
-                jsonInMediaStorageConfig = TRUE;
-                i++;
-            }
+    // Parse the response
+    MEMSET(&pSignalingClient->mediaStorageConfig, 0x00, SIZEOF(MediaStorageConfig));
+
+    if (mediaStorageConfig.pStatus != NULL) {
+        CHK(mediaStorageConfig.statusLength <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
+
+        if (STRNCMP("ENABLED", mediaStorageConfig.pStatus, mediaStorageConfig.statusLength) == 0) {
+            pSignalingClient->mediaStorageConfig.storageStatus = TRUE;
         } else {
-            if (compareJsonString(pResponseStr, &tokens[i], JSMN_STRING, (PCHAR) "Status")) {
-                strLen = (UINT32) (tokens[i + 1].end - tokens[i + 1].start);
-                CHK(strLen <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-                if (STRNCMP("ENABLED", pResponseStr + tokens[i + 1].start, strLen) == 0) {
-                    pSignalingClient->mediaStorageConfig.storageStatus = TRUE;
-                } else {
-                    pSignalingClient->mediaStorageConfig.storageStatus = FALSE;
-                }
-                i++;
-            } else if (compareJsonString(pResponseStr, &tokens[i], JSMN_STRING, (PCHAR) "StreamARN")) {
-                // StorageStream may be null.
-                if (tokens[i + 1].type != JSMN_PRIMITIVE) {
-                    strLen = (UINT32) (tokens[i + 1].end - tokens[i + 1].start);
-                    CHK(strLen <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-                    STRNCPY(pSignalingClient->mediaStorageConfig.storageStreamArn, pResponseStr + tokens[i + 1].start, strLen);
-                    pSignalingClient->mediaStorageConfig.storageStreamArn[MAX_ARN_LEN] = '\0';
-                }
-                i++;
-            }
+            pSignalingClient->mediaStorageConfig.storageStatus = FALSE;
         }
+    }
+
+    if (mediaStorageConfig.pStreamArn != NULL) {
+        CHK(mediaStorageConfig.streamArnLength <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
+
+        STRNCPY(pSignalingClient->mediaStorageConfig.storageStreamArn, mediaStorageConfig.pStreamArn, mediaStorageConfig.streamArnLength);
+                pSignalingClient->mediaStorageConfig.storageStreamArn[MAX_ARN_LEN] = '\0';
     }
 
     // Perform some validation on the channel description

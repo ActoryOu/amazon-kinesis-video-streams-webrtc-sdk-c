@@ -18,6 +18,10 @@ SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * p
 
 SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char * pMessage, uint32_t messageLength, SignalDescribeChannel_t *pDescribeChannel );
 
+SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, uint32_t * pUrlLength, char *pBody, uint32_t * pBodyLength );
+
+SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, char * pMessage, uint32_t messageLength, SignalMediaStorageConfig_t *pMediaStorageConfig );
+
 SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, uint32_t * pUrlLength, char *pBody, uint32_t * pBodyLength );
 
 SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMessage, uint32_t messageLength, SignalIceConfigMessage_t *pIceConfigMessage );
