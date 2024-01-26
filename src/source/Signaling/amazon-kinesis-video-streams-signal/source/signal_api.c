@@ -206,7 +206,7 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
                 pair.keyLength != strlen("ChannelInfo") || 
                 strncmp(pair.key, "ChannelInfo", pair.keyLength)) {
                 /* Not an ice server list meesage. */
-                result = SIGNAL_RESULT_INVALID_JSON;
+                result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
                 pChannelInfoBuffer = pair.value;
                 channelInfoBufferLength = pair.valueLength;
@@ -258,7 +258,7 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
                     if (strncmp(pair.key, "MessageTtlSeconds", pair.keyLength) == 0) {
                         if( pair.valueLength >= AWS_MESSAGE_TTL_SECONDS_BUFFER_MAX ) {
                             /* Unexpect TTL value from cloud. */
-                            result = SIGNAL_RESULT_INVALID_JSON;
+                            result = SIGNAL_RESULT_INVALID_TTL;
                             break;
                         }
 
@@ -267,7 +267,7 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
 
                         if (pDescribeChannel->messageTtlSeconds < AWS_MESSAGE_TTL_SECONDS_MIN || pDescribeChannel->messageTtlSeconds > AWS_MESSAGE_TTL_SECONDS_MAX) {
                             /* Unexpect TTL value from cloud. */
-                            result = SIGNAL_RESULT_INVALID_JSON;
+                            result = SIGNAL_RESULT_INVALID_TTL;
                         } else {
                             pCtx->messageTtlSeconds = pDescribeChannel->messageTtlSeconds;
                         }
@@ -376,7 +376,7 @@ SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, cha
                 pair.keyLength != strlen("MediaStorageConfiguration") || 
                 strncmp(pair.key, "MediaStorageConfiguration", pair.keyLength)) {
                 /* Not an ice server list meesage. */
-                result = SIGNAL_RESULT_INVALID_JSON;
+                result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
                 pMediaStorageConfigBuffer = pair.value;
                 mediaStorageConfigBufferLength = pair.valueLength;
@@ -679,7 +679,7 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
                 pair.keyLength != strlen("IceServerList") || 
                 strncmp(pair.key, "IceServerList", pair.keyLength)) {
                 /* Not an ice server list meesage. */
-                result = SIGNAL_RESULT_INVALID_JSON;
+                result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
                 pIceServerListBuffer = pair.value;
                 iceServerListBufferLength = pair.valueLength;

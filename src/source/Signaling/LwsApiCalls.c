@@ -768,6 +768,7 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
 
     // Create the API url
     retSignal = Signal_getDescribeChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -798,7 +799,7 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
         STATUS_SIGNALING_LWS_CALL_FAILED);
 
     retSignal = Signal_parseDescribeChannelMessage( &pSignalingClient->signalContext, pResponseStr, resultLen, &describeChannel );
-    CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_API_CALL_RETURN_JSON);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Parse the response
     MEMSET(&pSignalingClient->channelDescription, 0x00, SIZEOF(SignalingChannelDescription));
@@ -1130,6 +1131,7 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     retSignal = Signal_setClientId(&pSignalingClient->signalContext, pSignalingClient->clientInfo.signalingClientInfo.clientId, strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId));
 
     retSignal = Signal_getIceConfig(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -1159,7 +1161,7 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
         STATUS_SIGNALING_LWS_CALL_FAILED);
     
     retSignal = Signal_parseIceConfigMessage( &pSignalingClient->signalContext, pResponseStr, resultLen, &iceConfigMessage );
-    CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_API_CALL_RETURN_JSON);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
     MEMSET(&pSignalingClient->iceConfigs, 0x00, MAX_ICE_CONFIG_COUNT * SIZEOF(IceConfigInfo));
     pSignalingClient->iceConfigCount = 0;
 
@@ -1529,6 +1531,7 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
 
     // Create the API url
     retSignal = Signal_getMediaStorageConfigRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -1559,7 +1562,7 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
         STATUS_SIGNALING_LWS_CALL_FAILED);
 
     retSignal = Signal_parseMediaStorageConfigMessage( &pSignalingClient->signalContext, pResponseStr, resultLen, &mediaStorageConfig );
-    CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_API_CALL_RETURN_JSON);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Parse the response
     MEMSET(&pSignalingClient->mediaStorageConfig, 0x00, SIZEOF(MediaStorageConfig));
