@@ -26,7 +26,6 @@ extern "C" {
 #define PROTOCOL_INDEX_WSS   1
 
 // API postfix definitions
-#define CREATE_SIGNALING_CHANNEL_API_POSTFIX       "/createSignalingChannel"
 #define GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
 #define JOIN_STORAGE_SESSION_API_POSTFIX           "/joinStorageSession"
@@ -40,14 +39,6 @@ extern "C" {
 #define DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
     "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
     "\n\t\"CurrentVersion\": \"%s\"\n}"
-
-// Parameterized string for Create Channel API
-#define CREATE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
-    "{\n\t\"ChannelName\": \"%s\","                                                                                                                  \
-    "\n\t\"ChannelType\": \"%s\","                                                                                                                   \
-    "\n\t\"SingleMasterConfiguration\": {"                                                                                                           \
-    "\n\t\t\"MessageTtlSeconds\": %" PRIu64 "\n\t}"                                                                                                  \
-    "%s\n}"
 
 // Parameterized string for each tag pair as a JSON object
 #define TAG_PARAM_JSON_OBJ_TEMPLATE "\n\t\t{\"Key\": \"%s\", \"Value\": \"%s\"},"

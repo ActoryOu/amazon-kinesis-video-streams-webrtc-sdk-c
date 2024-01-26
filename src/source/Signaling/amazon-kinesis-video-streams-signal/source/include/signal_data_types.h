@@ -38,9 +38,13 @@ typedef enum SignalResult
  */
 #define AWS_CONTROL_PLANE_URI_POSTFIX ".amazonaws.com"
 
-#define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
+#define SIGNA_CHANNEL_TYPE_UNKNOWN_STRING       "UNKOWN"
+#define SIGNA_CHANNEL_TYPE_SINGLE_MASTER_STRING "SINGLE_MASTER"
+
 #define AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX "/describeSignalingChannel"
 #define AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX "/describeMediaStorageConfiguration"
+#define AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX "/createSignalingChannel"
+#define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
 
 // Parameterized string for Get Ice Server Config API
 #define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
@@ -55,6 +59,21 @@ typedef enum SignalResult
 // Parameterized string for Desceibe Media Storage Config API
 #define AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%s\"\n}"
 
+// Parameterized string for Create Channel API
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TEMPLATE_PREFIX                                                                                                           \
+    "{\n\t\"ChannelName\": \"%.*s\","                                                                                                                  \
+    "\n\t\"ChannelType\": \"%s\","                                                                                                                   \
+    "\n\t\"SingleMasterConfiguration\": {"                                                                                                           \
+    "\n\t\t\"MessageTtlSeconds\": %u\n\t}"
+
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TEMPLATE_POSTFIX "\n}"
+
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_PREFIX ",\n\t\"Tags\": ["
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_POSTFIX "\n\t]"
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_TEMPLATE \
+    "\n\t\t{\n\t\t\t\"Key\": \"%.*s\"," \
+    "\n\t\t\t\"Value\": \"%.*s\"\n\t\t}"
+
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
 #define AWS_SIGNALING_CLIENT_ID_MAX_LENGTH ( 256 )
@@ -64,65 +83,110 @@ typedef enum SignalResult
  * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_DescribeSignalingChannel.html#API_DescribeSignalingChannel_RequestSyntax
  * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_CreateStream.html#KinesisVideo-CreateStream-request-KmsKeyId
  */
-#define AWS_MAX_ARN_LEN ( 2048 )
+#define AWS_MAX_ARN_LEN ( 1024 )
 #define AWS_MAX_CHANNEL_NAME_LEN ( 256 )
 
 #define AWS_ICE_SERVER_MAX_NUM ( 5 )
 #define AWS_ICE_SERVER_MAX_URIS ( 5 )
 
+#define AWS_MESSAGE_TTL_SECONDS_BUFFER_MAX ( 5 )
+#define AWS_MESSAGE_TTL_SECONDS_MIN ( 5 )
+#define AWS_MESSAGE_TTL_SECONDS_MAX ( 120 )
+
+/**
+ * @brief Channel type
+ */
+typedef enum SignalChannelType {
+    SIGNAL_CHANNEL_TYPE_UNKNOWN,       //!< Channel type is unknown
+    SIGNAL_CHANNEL_TYPE_SINGLE_MASTER, //!< Channel type is master
+} SignalChannelType_t;
+
 typedef struct SignalContext
 {
     char region[AWS_REGION_MAX_LENGTH];
-    uint32_t regionLength;
+    size_t regionLength;
     char controlPlaneUrl[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    uint32_t controlPlaneUrlLength;
+    size_t controlPlaneUrlLength;
     char channelEndpointHttps[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    uint32_t channelEndpointHttpsLength;
+    size_t channelEndpointHttpsLength;
     char channelName[AWS_MAX_CHANNEL_NAME_LEN];
-    uint32_t channelNameLength;
+    size_t channelNameLength;
     char channelArn[AWS_MAX_ARN_LEN];
-    uint32_t channelArnLength;
+    size_t channelArnLength;
     char clientId[AWS_SIGNALING_CLIENT_ID_MAX_LENGTH];
-    uint32_t clientIdLength;
+    size_t clientIdLength;
+    SignalChannelType_t channelType;
+    uint16_t messageTtlSeconds;
 } SignalContext_t;
+
+/**
+ * Tag declaration
+ */
+typedef struct SignalTag {
+    char * pName;
+    size_t nameLength;
+    char * pValue;
+    size_t valueLength;
+} SignalTag_t;
+
+typedef struct SignalChannelInfo
+{
+    const char * pChannelArn;
+    size_t channelArnLength;
+    const char * pChannelName;
+    size_t channelNameLength;
+    const char * pChannelStatus;
+    size_t channelStatusLength;
+    SignalChannelType_t channelType;
+    const char * pVersion;
+    size_t versionLength;
+    const char * pCreationTime;
+    size_t creationTimeLength;
+    uint16_t messageTtlSeconds;
+} SignalChannelInfo_t;
+
+typedef struct SignalCreateChannel {
+    SignalChannelInfo_t channelInfo;
+    SignalTag_t * pTags;
+    size_t tagsCount;
+} SignalCreateChannel_t;
 
 typedef struct SignalDescribeChannel
 {
     const char * pChannelArn;
-    uint32_t channelArnLength;
+    size_t channelArnLength;
     const char * pChannelName;
-    uint32_t channelNameLength;
+    size_t channelNameLength;
     const char * pChannelStatus;
-    uint32_t channelStatusLength;
+    size_t channelStatusLength;
     const char * pChannelType;
-    uint32_t channelTypeLength;
+    size_t channelTypeLength;
     const char * pVersion;
-    uint32_t versionLength;
+    size_t versionLength;
     const char * pCreationTime;
-    uint32_t creationTimeLength;
-    const char * pMessageTtlSeconds;
-    uint32_t messageTtlSecondsLength;
+    size_t creationTimeLength;
+    uint16_t messageTtlSeconds;
 } SignalDescribeChannel_t;
 
 typedef struct SignalMediaStorageConfig
 {
     const char * pStatus;
-    uint32_t statusLength;
+    size_t statusLength;
     const char * pStreamArn;
-    uint32_t streamArnLength;
+    size_t streamArnLength;
 } SignalMediaStorageConfig_t;
 
 typedef struct SignalIceServer
 {
     const char * pPassword;
-    uint32_t passwordLength;
+    size_t passwordLength;
     const char * pTtl;
-    uint32_t ttlLength;
+    size_t ttlLength;
     const char * pUris[AWS_ICE_SERVER_MAX_URIS];
-    uint32_t urisLength[AWS_ICE_SERVER_MAX_URIS];
+    size_t urisLength[AWS_ICE_SERVER_MAX_URIS];
     uint32_t urisNum;
     const char * pUserName;
-    uint32_t userNameLength;
+    size_t userNameLength;
 } SignalIceServer_t;
 
 typedef struct SignalIceConfigMessage

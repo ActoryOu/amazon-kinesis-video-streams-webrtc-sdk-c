@@ -758,11 +758,10 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     jsmntok_t tokens[MAX_JSON_TOKEN_COUNT];
     UINT32 i, strLen, resultLen;
     UINT32 tokenCount;
-    UINT64 messageTtl;
     BOOL jsonInChannelDescription = FALSE, jsonInMvConfiguration = FALSE;
     SignalResult_t retSignal;
-    uint32_t urlLength = sizeof(url);
-    uint32_t paramsJsonLength = sizeof(paramsJson);
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
     SignalDescribeChannel_t describeChannel;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
@@ -817,12 +816,12 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
 
     if (describeChannel.pChannelStatus != NULL) {
         CHK(describeChannel.channelStatusLength <= MAX_DESCRIBE_CHANNEL_STATUS_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-        pSignalingClient->channelDescription.channelStatus = getChannelStatusFromString(describeChannel.pChannelStatus, describeChannel.channelStatusLength);
+        pSignalingClient->channelDescription.channelStatus = getChannelStatusFromString((PCHAR)describeChannel.pChannelStatus, describeChannel.channelStatusLength);
     }
 
     if (describeChannel.pChannelType != NULL) {
         CHK(describeChannel.channelTypeLength <= MAX_DESCRIBE_CHANNEL_TYPE_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-        pSignalingClient->channelDescription.channelType = getChannelTypeFromString(describeChannel.pChannelType, describeChannel.channelTypeLength);
+        pSignalingClient->channelDescription.channelType = getChannelTypeFromString((PCHAR)describeChannel.pChannelType, describeChannel.channelTypeLength);
     }
 
     if (describeChannel.pVersion != NULL) {
@@ -831,11 +830,9 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
         pSignalingClient->channelDescription.updateVersion[MAX_UPDATE_VERSION_LEN] = '\0';
     }
 
-    if (describeChannel.pMessageTtlSeconds != NULL) {
-        CHK_STATUS(STRTOUI64(describeChannel.pMessageTtlSeconds, describeChannel.pMessageTtlSeconds + describeChannel.messageTtlSecondsLength, 10, &messageTtl));
-
+    if (describeChannel.messageTtlSeconds != 0) {
         // NOTE: Ttl value is in seconds
-        pSignalingClient->channelDescription.messageTtl = messageTtl * HUNDREDS_OF_NANOS_IN_A_SECOND;
+        pSignalingClient->channelDescription.messageTtl = describeChannel.messageTtlSeconds * HUNDREDS_OF_NANOS_IN_A_SECOND;
     }
 
     // Perform some validation on the channel description
@@ -862,7 +859,6 @@ STATUS createChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     PRequestInfo pRequestInfo = NULL;
     CHAR url[MAX_URI_CHAR_LEN + 1];
     CHAR paramsJson[MAX_JSON_PARAMETER_STRING_LEN];
-    CHAR tagsJson[2 * MAX_JSON_PARAMETER_STRING_LEN];
     PCHAR pCurPtr, pTagsStart, pResponseStr;
     UINT32 i, strLen, resultLen;
     INT32 charsCopied;
@@ -870,36 +866,32 @@ STATUS createChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     jsmn_parser parser;
     jsmntok_t tokens[MAX_JSON_TOKEN_COUNT];
     UINT32 tokenCount;
+    SignalResult_t retSignal;
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalCreateChannel_t createChannel;
+    SignalTag_t tags[MAX_TAG_COUNT];
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->pChannelInfo->tagCount <= MAX_TAG_COUNT, STATUS_INVALID_ARG);
 
     // Create the API url
-    STRCPY(url, pSignalingClient->pChannelInfo->pControlPlaneUrl);
-    STRCAT(url, CREATE_SIGNALING_CHANNEL_API_POSTFIX);
-
-    tagsJson[0] = '\0';
-    if (pSignalingClient->pChannelInfo->tagCount != 0) {
-        // Prepare the tags elements. Format the list at the end
-        pCurPtr = tagsJson + MAX_JSON_PARAMETER_STRING_LEN;
-        pTagsStart = pCurPtr;
-        for (i = 0; i < pSignalingClient->pChannelInfo->tagCount; i++) {
-            charsCopied = SNPRINTF(pCurPtr, MAX_JSON_PARAMETER_STRING_LEN - (pCurPtr - pTagsStart), TAG_PARAM_JSON_OBJ_TEMPLATE,
-                                   pSignalingClient->pChannelInfo->pTags[i].name, pSignalingClient->pChannelInfo->pTags[i].value);
-            CHK(charsCopied > 0 && charsCopied < MAX_JSON_PARAMETER_STRING_LEN - (pCurPtr - pTagsStart), STATUS_INTERNAL_ERROR);
-            pCurPtr += charsCopied;
-        }
-
-        // Remove the tailing comma
-        *(pCurPtr - 1) = '\0';
-
-        // Prepare the json params for the call
-        SNPRINTF(tagsJson, MAX_JSON_PARAMETER_STRING_LEN, TAGS_PARAM_JSON_TEMPLATE, tagsJson + MAX_JSON_PARAMETER_STRING_LEN);
+    memset(&createChannel, 0, sizeof(SignalCreateChannel_t));
+    createChannel.channelInfo.channelNameLength = STRLEN(pSignalingClient->pChannelInfo->pChannelName);
+    createChannel.channelInfo.pChannelName = pSignalingClient->pChannelInfo->pChannelName;
+    createChannel.channelInfo.messageTtlSeconds = pSignalingClient->pChannelInfo->messageTtl / HUNDREDS_OF_NANOS_IN_A_SECOND;
+    createChannel.channelInfo.channelType = pSignalingClient->pChannelInfo->channelType == SIGNALING_CHANNEL_TYPE_SINGLE_MASTER? SIGNAL_CHANNEL_TYPE_SINGLE_MASTER:SIGNAL_CHANNEL_TYPE_UNKNOWN;
+    createChannel.tagsCount = pSignalingClient->pChannelInfo->tagCount;
+    /* Format tags into structure buffer. */
+    createChannel.pTags = tags;
+    for (i = 0; i < pSignalingClient->pChannelInfo->tagCount; i++) {
+        tags[i].nameLength = STRLEN(pSignalingClient->pChannelInfo->pTags[i].name);
+        tags[i].pName = pSignalingClient->pChannelInfo->pTags[i].name;
+        tags[i].valueLength = STRLEN(pSignalingClient->pChannelInfo->pTags[i].value);
+        tags[i].pValue = pSignalingClient->pChannelInfo->pTags[i].value;
     }
-
-    // Prepare the json params for the call
-    SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), CREATE_CHANNEL_PARAM_JSON_TEMPLATE, pSignalingClient->pChannelInfo->pChannelName,
-             getStringFromChannelType(pSignalingClient->pChannelInfo->channelType),
-             pSignalingClient->pChannelInfo->messageTtl / HUNDREDS_OF_NANOS_IN_A_SECOND, tagsJson);
+    retSignal = Signal_getCreateChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &createChannel);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -929,20 +921,14 @@ STATUS createChannelLws(PSignalingClient pSignalingClient, UINT64 time)
         STATUS_SIGNALING_LWS_CALL_FAILED);
 
     // Parse out the ARN
-    jsmn_init(&parser);
-    tokenCount = jsmn_parse(&parser, pResponseStr, resultLen, tokens, SIZEOF(tokens) / SIZEOF(jsmntok_t));
-    CHK(tokenCount > 1, STATUS_INVALID_API_CALL_RETURN_JSON);
-    CHK(tokens[0].type == JSMN_OBJECT, STATUS_INVALID_API_CALL_RETURN_JSON);
+    retSignal = Signal_parseCreateChannelMessage(&pSignalingClient->signalContext, pResponseStr, resultLen, &createChannel);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
-    // Loop through the tokens and extract the stream description
-    for (i = 1; i < tokenCount; i++) {
-        if (compareJsonString(pResponseStr, &tokens[i], JSMN_STRING, (PCHAR) "ChannelARN")) {
-            strLen = (UINT32) (tokens[i + 1].end - tokens[i + 1].start);
-            CHK(strLen <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
-            STRNCPY(pSignalingClient->channelDescription.channelArn, pResponseStr + tokens[i + 1].start, strLen);
-            pSignalingClient->channelDescription.channelArn[MAX_ARN_LEN] = '\0';
-            i++;
-        }
+    if (createChannel.channelInfo.pChannelArn != NULL) {
+        CHK(createChannel.channelInfo.channelArnLength <= MAX_ARN_LEN, STATUS_INVALID_API_CALL_RETURN_JSON);
+        
+        STRNCPY(pSignalingClient->channelDescription.channelArn, createChannel.channelInfo.pChannelArn, createChannel.channelInfo.channelArnLength);
+        pSignalingClient->channelDescription.channelArn[MAX_ARN_LEN] = '\0';
     }
 
     // Perform some validation on the channel description
@@ -1127,8 +1113,8 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     INT32 j;
     UINT64 ttl;
     SignalResult_t retSignal;
-    uint32_t urlLength = sizeof(url);
-    uint32_t paramsJsonLength = sizeof(paramsJson);
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
     SignalIceConfigMessage_t iceConfigMessage;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
@@ -1535,14 +1521,14 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
     UINT32 tokenCount;
     BOOL jsonInMediaStorageConfig = FALSE;
     SignalResult_t retSignal;
-    uint32_t urlLength = sizeof(url);
-    uint32_t paramsJsonLength = sizeof(paramsJson);
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
     SignalMediaStorageConfig_t mediaStorageConfig;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
 
     // Create the API url
-    retSignal = Signal_getDescribeChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    retSignal = Signal_getMediaStorageConfigRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
