@@ -39,10 +39,10 @@
 #define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
 
 // Parameterized string for Describe Channel API
-#define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%s\"\n}"
+#define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%.*s\"\n}"
 
 // Parameterized string for Desceibe Media Storage Config API
-#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%s\"\n}"
+#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%.*s\"\n}"
 
 // Parameterized string for Create Channel API
 #define AWS_CREATE_CHANNEL_PARAM_JSON_TEMPLATE_PREFIX                                                                                                           \
@@ -69,8 +69,8 @@
 
 // Parameterized string for Get Ice Server Config API
 #define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
-    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
-    "\n\t\"ClientId\": \"%s\","                                                                                                                      \
+    "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
+    "\n\t\"ClientId\": \"%.*s\","                                                                                                                      \
     "\n\t\"Service\": \"TURN\""                                                                                                                      \
     "\n}"
 
@@ -104,8 +104,8 @@ typedef enum SignalResult
     SIGNAL_RESULT_NOT_EXPECT_RESPONSE,
     SIGNAL_RESULT_INVALID_TTL,
     SIGNAL_RESULT_INVALID_ENDPOINT,
-    SIGNAL_RESULT_INVALID_CHANNEL_ARN,
     SIGNAL_RESULT_INVALID_CHANNEL_NAME,
+    SIGNAL_RESULT_INVALID_CHANNEL_TYPE,
     SIGNAL_RESULT_PARSE_NEXT_LAYER,
 } SignalResult_t;
 
@@ -166,24 +166,8 @@ typedef struct SignalContext
     char controlPlaneUrl[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
     size_t controlPlaneUrlLength;
     SignalRole_t roleType;
-
-    /* Channel information. */
     char channelName[AWS_MAX_CHANNEL_NAME_LEN];
     size_t channelNameLength;
-    char channelArn[AWS_MAX_ARN_LEN];
-    size_t channelArnLength;
-    char clientId[AWS_SIGNALING_CLIENT_ID_MAX_LENGTH];
-    size_t clientIdLength;
-    SignalChannelType_t channelType;
-    uint16_t messageTtlSeconds;
-    
-    /* Endpoints information. */
-    char endpointWebsocketSecure[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    size_t endpointWebsocketSecureLength;
-    char endpointHttps[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    size_t endpointHttpsLength;
-    char endpointWebrtc[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    size_t endpointWebrtcLength;
 } SignalContext_t;
 
 /**
@@ -197,14 +181,17 @@ typedef struct SignalTag {
 } SignalTag_t;
 
 typedef struct SignalCreate {
-    SignalChannelInfo_t channelInfo;
-    SignalEndpoints_t endpoints;
     char * pRegion;
     size_t regionLength;
     char * pControlPlaneUrl;
     size_t controlPlaneUrlLength;
-    SignalRole_t roleType;
 } SignalCreate_t;
+
+typedef struct SignalDescribeChannelRequest
+{
+    char * pChannelName;
+    size_t channelNameLength;
+} SignalDescribeChannelRequest_t;
 
 typedef struct SignalCreateChannel {
     SignalChannelInfo_t channelInfo;
@@ -228,6 +215,12 @@ typedef struct SignalDescribeChannel
     size_t creationTimeLength;
     uint16_t messageTtlSeconds;
 } SignalDescribeChannel_t;
+
+typedef struct SignalMediaStorageConfigRequest
+{
+    char * pChannelArn;
+    size_t channelArnLength;
+} SignalMediaStorageConfigRequest_t;
 
 typedef struct SignalMediaStorageConfig
 {
@@ -258,9 +251,21 @@ typedef struct SignalIceConfigMessage
 
 typedef struct SignalGetChannelEndpointRequest
 {
+    char * pChannelArn;
+    size_t channelArnLength;
     uint8_t protocolsBitsMap; /* support multiple propocols. */
     SignalRole_t role;
 } SignalGetChannelEndpointRequest_t;
+
+typedef struct SignalIceConfigRequest
+{
+    char * pChannelArn;
+    size_t channelArnLength;
+    char * pEndpointHttps;
+    size_t endpointHttpsLength;
+    char * pClientId;
+    size_t clientIdLength;
+} SignalIceConfigRequest_t;
 
 /*-----------------------------------------------------------*/
 

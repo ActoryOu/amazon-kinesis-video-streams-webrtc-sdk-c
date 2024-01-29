@@ -782,12 +782,17 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     SignalResult_t retSignal;
     SIZE_T urlLength = sizeof(url);
     SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalDescribeChannelRequest_t describeChannelRequest;
     SignalDescribeChannel_t describeChannel;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->pChannelInfo != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->pChannelInfo->pChannelName != NULL, STATUS_NULL_ARG);
 
     // Create the API url
-    retSignal = Signal_getDescribeChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    describeChannelRequest.channelNameLength = strlen(pSignalingClient->pChannelInfo->pChannelName);
+    describeChannelRequest.pChannelName = pSignalingClient->pChannelInfo->pChannelName;
+    retSignal = Signal_getDescribeChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &describeChannelRequest);
     CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
@@ -990,7 +995,10 @@ STATUS getChannelEndpointLws(PSignalingClient pSignalingClient, UINT64 time)
     SignalEndpoints_t endpoints;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
+    getEndpointRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    getEndpointRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
     getEndpointRequest.protocolsBitsMap = SIGNAL_ENDPOINT_PROTOCOL_HTTPS | SIGNAL_ENDPOINT_PROTOCOL_WEBSOCKET_SECURE;
     if (pSignalingClient->mediaStorageConfig.storageStatus != FALSE) {
         getEndpointRequest.protocolsBitsMap |= SIGNAL_ENDPOINT_PROTOCOL_WEBRTC;
@@ -1091,21 +1099,24 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     SignalResult_t retSignal;
     SIZE_T urlLength = sizeof(url);
     SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalIceConfigRequest_t iceConfigRequest;
     SignalIceConfigMessage_t iceConfigMessage;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
     CHK(pSignalingClient->channelEndpointHttps[0] != '\0', STATUS_INTERNAL_ERROR);
 
     // Update the diagnostics info on the number of ICE refresh calls
     ATOMIC_INCREMENT(&pSignalingClient->diagnostics.iceRefreshCount);
 
-    // retSignal = Signal_setChannelEndpointHttps(&pSignalingClient->signalContext, pSignalingClient->channelEndpointHttps, strlen(pSignalingClient->channelEndpointHttps));
-    
-    // retSignal = Signal_setChannelArn(&pSignalingClient->signalContext, pSignalingClient->channelDescription.channelArn, strlen(pSignalingClient->channelDescription.channelArn));
+    iceConfigRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    iceConfigRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
+    iceConfigRequest.pEndpointHttps = pSignalingClient->channelEndpointHttps;
+    iceConfigRequest.endpointHttpsLength = strlen(pSignalingClient->channelEndpointHttps);
+    iceConfigRequest.pClientId = pSignalingClient->clientInfo.signalingClientInfo.clientId;
+    iceConfigRequest.clientIdLength = strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId);
 
-    retSignal = Signal_setClientId(&pSignalingClient->signalContext, pSignalingClient->clientInfo.signalingClientInfo.clientId, strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId));
-
-    retSignal = Signal_getIceConfig(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    retSignal = Signal_getIceConfig(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &iceConfigRequest);
     CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
@@ -1500,12 +1511,16 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
     SignalResult_t retSignal;
     SIZE_T urlLength = sizeof(url);
     SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalMediaStorageConfigRequest_t mediaStorageConfigRequest;
     SignalMediaStorageConfig_t mediaStorageConfig;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
+    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
     // Create the API url
-    retSignal = Signal_getMediaStorageConfigRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength);
+    mediaStorageConfigRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    mediaStorageConfigRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
+    retSignal = Signal_getMediaStorageConfigRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &mediaStorageConfigRequest);
     CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body

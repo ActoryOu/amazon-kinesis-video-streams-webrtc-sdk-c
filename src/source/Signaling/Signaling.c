@@ -175,43 +175,6 @@ STATUS createSignalingSync(PSignalingClientInfoInternal pClientInfo, PChannelInf
         signalCreate.regionLength = strlen(pSignalingClient->pChannelInfo->pRegion);
         signalCreate.pRegion = pSignalingClient->pChannelInfo->pRegion;
     }
-    if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_MASTER) {
-        signalCreate.roleType = SIGNAL_ROLE_MASTER;
-    } else if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_VIEWER) {
-        signalCreate.roleType = SIGNAL_ROLE_VIEWER;
-    } else {
-        /* This should never happen. */
-        CHK(FALSE, STATUS_INVALID_ARG);
-    }
-
-    /* Set channel info. */
-    if (pSignalingClient->pChannelInfo->pChannelArn != NULL) {
-        signalCreate.channelInfo.channelArnLength = strlen(pSignalingClient->pChannelInfo->pChannelArn);
-        signalCreate.channelInfo.pChannelArn = pSignalingClient->pChannelInfo->pChannelArn;
-    }
-
-    if (pSignalingClient->pChannelInfo->pChannelName != NULL) {
-        signalCreate.channelInfo.channelNameLength = strlen(pSignalingClient->pChannelInfo->pChannelName);
-        signalCreate.channelInfo.pChannelName = pSignalingClient->pChannelInfo->pChannelName;
-    }
-    signalCreate.channelInfo.channelType = SIGNAL_CHANNEL_TYPE_SINGLE_MASTER;
-
-    /* Set endpoints info. */
-    if (pSignalingClient->channelEndpointWss != NULL) {
-        signalCreate.endpoints.endpointWebsocketSecureLength = strlen(pSignalingClient->channelEndpointWss);
-        signalCreate.endpoints.pEndpointWebsocketSecure = pSignalingClient->channelEndpointWss;
-    }
-
-    if (pSignalingClient->channelEndpointHttps != NULL) {
-        signalCreate.endpoints.endpointHttpsLength = strlen(pSignalingClient->channelEndpointHttps);
-        signalCreate.endpoints.pEndpointHttps = pSignalingClient->channelEndpointHttps;
-    }
-
-    if (pSignalingClient->channelEndpointWebrtc != NULL) {
-        signalCreate.endpoints.endpointWebrtcLength = strlen(pSignalingClient->channelEndpointWebrtc);
-        signalCreate.endpoints.pEndpointWebrtc = pSignalingClient->channelEndpointWebrtc;
-    }
-
     retSignal = Signal_createSignal(&pSignalingClient->signalContext,
                                     &signalCreate);
     CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_OPERATION);

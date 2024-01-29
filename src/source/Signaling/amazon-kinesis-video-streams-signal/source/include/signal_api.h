@@ -8,17 +8,11 @@
 
 SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCreate );
 
-SignalResult_t Signal_setChannelEndpointHttps( SignalContext_t *pCtx, char * pChannelEndpointHttps, size_t channelEndpointHttpsLength );
-
-SignalResult_t Signal_setChannelArn( SignalContext_t *pCtx, char * pChannelArn, size_t channelArnLength );
-
-SignalResult_t Signal_setClientId( SignalContext_t *pCtx, char * pClientId, size_t clientIdLength );
-
-SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength );
+SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDescribeChannelRequest_t * pDescribeChannelRequest );
 
 SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalDescribeChannel_t *pDescribeChannel );
 
-SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength );
+SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalMediaStorageConfigRequest_t * pMediaStorageConfigRequest );
 
 SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalMediaStorageConfig_t *pMediaStorageConfig );
 
@@ -30,7 +24,7 @@ SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * p
 
 SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalEndpoints_t * pEndpoints );
 
-SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength );
+SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalIceConfigRequest_t * pIceConfigReqeust);
 
 SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalIceConfigMessage_t *pIceConfigMessage );
 

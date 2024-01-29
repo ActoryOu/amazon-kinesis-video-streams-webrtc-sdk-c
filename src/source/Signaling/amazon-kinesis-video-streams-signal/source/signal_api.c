@@ -57,10 +57,7 @@ SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCrea
     int length = 0;
 
     /* input check */
-    if (pCtx == NULL || pCreate == NULL || pCreate->channelInfo.pChannelName == NULL) {
-        result = SIGNAL_RESULT_BAD_PARAM;
-    } else if (pCreate->channelInfo.channelNameLength >= AWS_MAX_CHANNEL_NAME_LEN ||
-               pCreate->channelInfo.channelArnLength >= AWS_MAX_ARN_LEN) {
+    if (pCtx == NULL || pCreate == NULL) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
 
@@ -102,93 +99,17 @@ SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCrea
         }
     }
 
-    /* Set role type. */
-    if (result == SIGNAL_RESULT_OK) {
-        pCtx->roleType = pCreate->roleType;
-    }
-
-    /* Set channel information. */
-    if (result == SIGNAL_RESULT_OK) {
-        // TODO: Add error handling
-        pCtx->channelNameLength = pCreate->channelInfo.channelNameLength;
-        memcpy(pCtx->channelName, pCreate->channelInfo.pChannelName, pCtx->channelNameLength);
-
-        if (pCreate->channelInfo.pChannelArn != NULL) {
-            pCtx->channelArnLength = pCreate->channelInfo.channelArnLength;
-            memcpy(pCtx->channelArn, pCreate->channelInfo.pChannelArn, pCtx->channelArnLength);
-        }
-
-        pCtx->channelType = pCreate->channelInfo.channelType;
-        pCtx->messageTtlSeconds = pCreate->channelInfo.messageTtlSeconds;
-    }
-
-    /* Set endpoints information. */
-
-
     return result;
 }
 
-SignalResult_t Signal_setChannelEndpointHttps( SignalContext_t *pCtx, char * pChannelEndpointHttps, size_t channelEndpointHttpsLength )
-{
-    SignalResult_t result = SIGNAL_RESULT_OK;
-
-    /* input check */
-    if (pCtx == NULL) {
-        result = SIGNAL_RESULT_BAD_PARAM;
-    }
-
-    if (result == SIGNAL_RESULT_OK) {
-        // TODO: Add error handling or delete this function
-        pCtx->endpointHttpsLength = channelEndpointHttpsLength;
-        memcpy(pCtx->endpointHttps, pChannelEndpointHttps, pCtx->endpointHttpsLength);
-    }
-
-    return result;
-}
-
-SignalResult_t Signal_setChannelArn( SignalContext_t *pCtx, char * pChannelArn, size_t channelArnLength )
-{
-    SignalResult_t result = SIGNAL_RESULT_OK;
-
-    /* input check */
-    if (pCtx == NULL) {
-        result = SIGNAL_RESULT_BAD_PARAM;
-    }
-
-    if (result == SIGNAL_RESULT_OK) {
-        // TODO: Add error handling or delete this function
-        pCtx->channelArnLength = channelArnLength;
-        memcpy(pCtx->channelArn, pChannelArn, pCtx->channelArnLength);
-    }
-
-    return result;
-}
-
-SignalResult_t Signal_setClientId( SignalContext_t *pCtx, char * pClientId, size_t clientIdLength )
-{
-    SignalResult_t result = SIGNAL_RESULT_OK;
-
-    /* input check */
-    if (pCtx == NULL) {
-        result = SIGNAL_RESULT_BAD_PARAM;
-    }
-
-    if (result == SIGNAL_RESULT_OK) {
-        // TODO: Add error handling or delete this function
-        pCtx->clientIdLength = clientIdLength;
-        memcpy(pCtx->clientId, pClientId, pCtx->clientIdLength);
-    }
-
-    return result;
-}
-
-SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength )
+SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDescribeChannelRequest_t * pDescribeChannelRequest )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;
     int length=0;
 
     /* input check */
-    if (pCtx == NULL || pUrl == NULL || pBody == NULL) {
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL || pDescribeChannelRequest == NULL ||
+        pDescribeChannelRequest->pChannelName == NULL) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
 
@@ -211,7 +132,8 @@ SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * p
 
     if (result == SIGNAL_RESULT_OK) {
         // Prepare the body for the call
-        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE, pCtx->channelName);
+        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE,
+                          (int) pDescribeChannelRequest->channelNameLength, pDescribeChannelRequest->pChannelName);
         
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -277,17 +199,8 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
 
         while (jsonResult == JSONSuccess) {
             if (strncmp(pair.key, "ChannelARN", pair.keyLength) == 0) {
-                if (pair.valueLength < AWS_MAX_ARN_LEN) {
-                    pDescribeChannel->pChannelArn = pair.value;
-                    pDescribeChannel->channelArnLength = pair.valueLength;
-
-                    /* Store channel ARN in context. */
-                    pCtx->channelArnLength = pDescribeChannel->channelArnLength;
-                    memcpy(pCtx->channelArn, pDescribeChannel->pChannelArn, pCtx->channelArnLength);
-                    pCtx->channelArn[pCtx->channelArnLength] = '\0';
-                } else {
-                    result = SIGNAL_RESULT_INVALID_CHANNEL_ARN;
-                }
+                pDescribeChannel->pChannelArn = pair.value;
+                pDescribeChannel->channelArnLength = pair.valueLength;
             } else if (strncmp(pair.key, "ChannelName", pair.keyLength) == 0) {
                 if (pair.valueLength < AWS_MAX_CHANNEL_NAME_LEN) {
                     pDescribeChannel->pChannelName = pair.value;
@@ -308,8 +221,8 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
                 pDescribeChannel->channelTypeLength = pair.valueLength;
 
                 /* Store channel type in context. */
-                if (strncmp(pDescribeChannel->pChannelType, "SINGLE_MASTER", pDescribeChannel->channelTypeLength) == 0) {
-                    pCtx->channelType = SIGNAL_CHANNEL_TYPE_SINGLE_MASTER;
+                if (strncmp(pDescribeChannel->pChannelType, "SINGLE_MASTER", pDescribeChannel->channelTypeLength) != 0) {
+                    result = SIGNAL_RESULT_INVALID_CHANNEL_TYPE;
                 }
             } else if (strncmp(pair.key, "CreationTime", pair.keyLength) == 0) {
                 // TODO: In the future parse out the creation time but currently we don't need it
@@ -334,8 +247,6 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
                         if (pDescribeChannel->messageTtlSeconds < AWS_MESSAGE_TTL_SECONDS_MIN || pDescribeChannel->messageTtlSeconds > AWS_MESSAGE_TTL_SECONDS_MAX) {
                             /* Unexpect TTL value from cloud. */
                             result = SIGNAL_RESULT_INVALID_TTL;
-                        } else {
-                            pCtx->messageTtlSeconds = pDescribeChannel->messageTtlSeconds;
                         }
                     } else {
                         // unknown attribute
@@ -363,13 +274,14 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
     return result;
 }
 
-SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength )
+SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalMediaStorageConfigRequest_t * pMediaStorageConfigRequest )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;
     int length=0;
 
     /* input check */
-    if (pCtx == NULL || pUrl == NULL || pBody == NULL) {
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL || pMediaStorageConfigRequest == NULL ||
+        pMediaStorageConfigRequest->pChannelArn == NULL ) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
 
@@ -392,7 +304,8 @@ SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char 
 
     if (result == SIGNAL_RESULT_OK) {
         // Prepare the body for the call
-        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE, pCtx->channelArn);
+        length = snprintf(pBody, *pBodyLength, AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE,
+                          (int) pMediaStorageConfigRequest->channelArnLength, pMediaStorageConfigRequest->pChannelArn);
         
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -611,10 +524,6 @@ SignalResult_t Signal_getCreateChannelRequest( SignalContext_t *pCtx, char * pUr
         pCtx->channelNameLength = pCreateChannel->channelInfo.channelNameLength;
         memcpy(pCtx->channelName, pCreateChannel->channelInfo.pChannelName, pCtx->channelNameLength);
         pCtx->channelName[pCtx->channelNameLength] = '\0';
-
-        pCtx->channelType = pCreateChannel->channelInfo.channelType;
-
-        pCtx->messageTtlSeconds = pCreateChannel->channelInfo.messageTtlSeconds;
     }
 
     return result;
@@ -649,17 +558,8 @@ SignalResult_t Signal_parseCreateChannelMessage( SignalContext_t *pCtx, char * p
 
         if (jsonResult == JSONSuccess) {
             if (strncmp(pair.key, "ChannelARN", pair.keyLength) == 0) {
-                if (pair.valueLength < AWS_MAX_ARN_LEN) {
-                    pCreateChannel->channelInfo.pChannelArn = pair.value;
-                    pCreateChannel->channelInfo.channelArnLength = pair.valueLength;
-
-                    /* Store channel information in context. */
-                    pCtx->channelArnLength = pCreateChannel->channelInfo.channelArnLength;
-                    memcpy(pCtx->channelArn, pCreateChannel->channelInfo.pChannelArn, pCtx->channelArnLength);
-                    pCtx->channelArn[pCtx->channelArnLength] = '\0';
-                } else {
-                    result = SIGNAL_RESULT_INVALID_CHANNEL_ARN;
-                }
+                pCreateChannel->channelInfo.pChannelArn = pair.value;
+                pCreateChannel->channelInfo.channelArnLength = pair.valueLength;
             }
         } else {
             result = SIGNAL_RESULT_INVALID_JSON;
@@ -679,6 +579,7 @@ SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * p
 
     /* input check */
     if (pCtx == NULL || pUrl == NULL || pBody == NULL || pChannelEndpointRequest == NULL ||
+        pChannelEndpointRequest->pChannelArn == NULL ||
         (pChannelEndpointRequest->role != SIGNAL_ROLE_MASTER && pChannelEndpointRequest->role != SIGNAL_ROLE_VIEWER)) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
@@ -735,7 +636,7 @@ SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * p
     if (result == SIGNAL_RESULT_OK) {
         // Prepare the body for the call
         length = snprintf(pBody, *pBodyLength, AWS_GET_CHANNEL_ENDPOINT_PARAM_JSON_TEMPLATE,
-                          (int) pCtx->channelArnLength, pCtx->channelArn,
+                          (int) pChannelEndpointRequest->channelArnLength, pChannelEndpointRequest->pChannelArn,
                           protocols,
                           pChannelEndpointRequest->role == SIGNAL_ROLE_MASTER? SIGNAL_STRING_MASTER:SIGNAL_STRING_VIEWER);
         
@@ -832,30 +733,15 @@ SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char *
                     case SIGNAL_ENDPOINT_PROTOCOL_WEBSOCKET_SECURE:
                         pEndpoints->pEndpointWebsocketSecure = pTempEndpoint;
                         pEndpoints->endpointWebsocketSecureLength = tempEndpointLength;
-
-                        /* Store endpoint in context. */
-                        pCtx->endpointWebsocketSecureLength = tempEndpointLength;
-                        memcpy(pCtx->endpointWebsocketSecure, pTempEndpoint, tempEndpointLength);
-                        pCtx->endpointWebsocketSecure[tempEndpointLength] = '\0';
                         break;
                     case SIGNAL_ENDPOINT_PROTOCOL_HTTPS:
                         pEndpoints->pEndpointHttps = pTempEndpoint;
                         pEndpoints->endpointHttpsLength = tempEndpointLength;
-
-                        /* Store endpoint in context. */
-                        pCtx->endpointHttpsLength = tempEndpointLength;
-                        memcpy(pCtx->endpointHttps, pTempEndpoint, tempEndpointLength);
-                        pCtx->endpointHttps[tempEndpointLength] = '\0';
                         break;
                     case SIGNAL_ENDPOINT_PROTOCOL_WEBRTC:
                     default:
                         pEndpoints->pEndpointWebrtc = pTempEndpoint;
                         pEndpoints->endpointWebrtcLength = tempEndpointLength;
-
-                        /* Store endpoint in context. */
-                        pCtx->endpointWebrtcLength = tempEndpointLength;
-                        memcpy(pCtx->endpointWebrtc, pTempEndpoint, tempEndpointLength);
-                        pCtx->endpointWebrtc[tempEndpointLength] = '\0';
                         break;
                 }
             }
@@ -868,20 +754,21 @@ SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char *
     return result;
 }
 
-SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength )
+SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalIceConfigRequest_t * pIceConfigReqeust )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;
     int length=0;
 
     /* input check */
-    if (pCtx == NULL || pUrl == NULL || pBody == NULL) {
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL || pIceConfigReqeust == NULL ||
+        pIceConfigReqeust->pClientId == NULL || pIceConfigReqeust->pEndpointHttps == NULL) {
         result = SIGNAL_RESULT_BAD_PARAM;
     }
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
         length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
-                          (int) pCtx->endpointHttpsLength, pCtx->endpointHttps,
+                          (int) pIceConfigReqeust->endpointHttpsLength, pIceConfigReqeust->pEndpointHttps,
                           (int) strlen(AWS_GET_ICE_CONFIG_API_POSTFIX), AWS_GET_ICE_CONFIG_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
@@ -897,8 +784,9 @@ SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t *
 
     if (result == SIGNAL_RESULT_OK) {
         // Prepare the body for the call
-        length = snprintf(pBody, *pBodyLength, AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE, pCtx->channelArn,
-                          pCtx->clientId);
+        length = snprintf(pBody, *pBodyLength, AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE,
+                          (int) pIceConfigReqeust->channelArnLength, pIceConfigReqeust->pChannelArn,
+                          (int) pIceConfigReqeust->clientIdLength, pIceConfigReqeust->pClientId);
         
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
