@@ -7,19 +7,6 @@
 
 /*-----------------------------------------------------------*/
 
-typedef enum SignalResult
-{
-    SIGNAL_RESULT_OK,
-    SIGNAL_RESULT_BASE = 0x52000000,
-    SIGNAL_RESULT_BAD_PARAM,
-    SIGNAL_RESULT_SNPRINTF_ERROR,
-    SIGNAL_RESULT_OUT_OF_MEMORY,
-    SIGNAL_RESULT_INVALID_JSON,
-    SIGNAL_RESULT_NOT_EXPECT_RESPONSE,
-    SIGNAL_RESULT_INVALID_TTL,
-    SIGNAL_RESULT_PARSE_NEXT_LAYER,
-} SignalResult_t;
-
 /**
  * Default AWS region
  */
@@ -40,20 +27,16 @@ typedef enum SignalResult
  */
 #define AWS_CONTROL_PLANE_URI_POSTFIX ".amazonaws.com"
 
-#define SIGNA_CHANNEL_TYPE_UNKNOWN_STRING       "UNKOWN"
-#define SIGNA_CHANNEL_TYPE_SINGLE_MASTER_STRING "SINGLE_MASTER"
+#define SIGNAL_STRING_UNKNOWN "UNKOWN"
+#define SIGNAL_STRING_SINGLE_MASTER "SINGLE_MASTER"
+#define SIGNAL_STRING_MASTER "MASTER"
+#define SIGNAL_STRING_VIEWER "VIEWER"
 
 #define AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX "/describeSignalingChannel"
 #define AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX "/describeMediaStorageConfiguration"
 #define AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX "/createSignalingChannel"
+#define AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
-
-// Parameterized string for Get Ice Server Config API
-#define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
-    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
-    "\n\t\"ClientId\": \"%s\","                                                                                                                      \
-    "\n\t\"Service\": \"TURN\""                                                                                                                      \
-    "\n}"
 
 // Parameterized string for Describe Channel API
 #define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%s\"\n}"
@@ -76,6 +59,21 @@ typedef enum SignalResult
     "\n\t\t{\n\t\t\t\"Key\": \"%.*s\"," \
     "\n\t\t\t\"Value\": \"%.*s\"\n\t\t}"
 
+// Parameterized string for Get Channel Endpoint API
+#define AWS_GET_CHANNEL_ENDPOINT_PARAM_JSON_TEMPLATE                                                                                                     \
+    "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
+    "\n\t\"SingleMasterChannelEndpointConfiguration\": {"                                                                                            \
+    "\n\t\t\"Protocols\": [%s],"                                                                                                                     \
+    "\n\t\t\"Role\": \"%s\""                                                                                                                         \
+    "\n\t}\n}"
+
+// Parameterized string for Get Ice Server Config API
+#define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
+    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
+    "\n\t\"ClientId\": \"%s\","                                                                                                                      \
+    "\n\t\"Service\": \"TURN\""                                                                                                                      \
+    "\n}"
+
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
 #define AWS_SIGNALING_CLIENT_ID_MAX_LENGTH ( 256 )
@@ -95,6 +93,31 @@ typedef enum SignalResult
 #define AWS_MESSAGE_TTL_SECONDS_MIN ( 5 )
 #define AWS_MESSAGE_TTL_SECONDS_MAX ( 120 )
 
+typedef enum SignalResult
+{
+    SIGNAL_RESULT_OK,
+    SIGNAL_RESULT_BASE = 0x52000000,
+    SIGNAL_RESULT_BAD_PARAM,
+    SIGNAL_RESULT_SNPRINTF_ERROR,
+    SIGNAL_RESULT_OUT_OF_MEMORY,
+    SIGNAL_RESULT_INVALID_JSON,
+    SIGNAL_RESULT_NOT_EXPECT_RESPONSE,
+    SIGNAL_RESULT_INVALID_TTL,
+    SIGNAL_RESULT_INVALID_ENDPOINT,
+    SIGNAL_RESULT_INVALID_CHANNEL_ARN,
+    SIGNAL_RESULT_INVALID_CHANNEL_NAME,
+    SIGNAL_RESULT_PARSE_NEXT_LAYER,
+} SignalResult_t;
+
+typedef enum SignalChannelEndpointProtocol
+{
+    SIGNAL_ENDPOINT_PROTOCOL_NONE = 0,
+    SIGNAL_ENDPOINT_PROTOCOL_WEBSOCKET_SECURE = 1,
+    SIGNAL_ENDPOINT_PROTOCOL_HTTPS = 2,
+    SIGNAL_ENDPOINT_PROTOCOL_WEBRTC = 4,
+    SIGNAL_ENDPOINT_PROTOCOL_MAX = 0xFF,
+} SignalChannelEndpointProtocol_t;
+
 /**
  * @brief Channel type
  */
@@ -103,33 +126,12 @@ typedef enum SignalChannelType {
     SIGNAL_CHANNEL_TYPE_SINGLE_MASTER, //!< Channel type is master
 } SignalChannelType_t;
 
-typedef struct SignalContext
+typedef enum SignalRole
 {
-    char region[AWS_REGION_MAX_LENGTH];
-    size_t regionLength;
-    char controlPlaneUrl[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    size_t controlPlaneUrlLength;
-    char channelEndpointHttps[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
-    size_t channelEndpointHttpsLength;
-    char channelName[AWS_MAX_CHANNEL_NAME_LEN];
-    size_t channelNameLength;
-    char channelArn[AWS_MAX_ARN_LEN];
-    size_t channelArnLength;
-    char clientId[AWS_SIGNALING_CLIENT_ID_MAX_LENGTH];
-    size_t clientIdLength;
-    SignalChannelType_t channelType;
-    uint16_t messageTtlSeconds;
-} SignalContext_t;
-
-/**
- * Tag declaration
- */
-typedef struct SignalTag {
-    char * pName;
-    size_t nameLength;
-    char * pValue;
-    size_t valueLength;
-} SignalTag_t;
+    SIGNAL_ROLE_NONE = 0,
+    SIGNAL_ROLE_MASTER,
+    SIGNAL_ROLE_VIEWER,
+} SignalRole_t;
 
 typedef struct SignalChannelInfo
 {
@@ -146,6 +148,63 @@ typedef struct SignalChannelInfo
     size_t creationTimeLength;
     uint16_t messageTtlSeconds;
 } SignalChannelInfo_t;
+
+typedef struct SignalEndpoints
+{
+    const char * pEndpointWebsocketSecure;
+    size_t endpointWebsocketSecureLength;
+    const char * pEndpointHttps;
+    size_t endpointHttpsLength;
+    const char * pEndpointWebrtc;
+    size_t endpointWebrtcLength;
+} SignalEndpoints_t;
+
+typedef struct SignalContext
+{
+    char region[AWS_REGION_MAX_LENGTH];
+    size_t regionLength;
+    char controlPlaneUrl[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
+    size_t controlPlaneUrlLength;
+    SignalRole_t roleType;
+
+    /* Channel information. */
+    char channelName[AWS_MAX_CHANNEL_NAME_LEN];
+    size_t channelNameLength;
+    char channelArn[AWS_MAX_ARN_LEN];
+    size_t channelArnLength;
+    char clientId[AWS_SIGNALING_CLIENT_ID_MAX_LENGTH];
+    size_t clientIdLength;
+    SignalChannelType_t channelType;
+    uint16_t messageTtlSeconds;
+    
+    /* Endpoints information. */
+    char endpointWebsocketSecure[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
+    size_t endpointWebsocketSecureLength;
+    char endpointHttps[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
+    size_t endpointHttpsLength;
+    char endpointWebrtc[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
+    size_t endpointWebrtcLength;
+} SignalContext_t;
+
+/**
+ * Tag declaration
+ */
+typedef struct SignalTag {
+    char * pName;
+    size_t nameLength;
+    char * pValue;
+    size_t valueLength;
+} SignalTag_t;
+
+typedef struct SignalCreate {
+    SignalChannelInfo_t channelInfo;
+    SignalEndpoints_t endpoints;
+    char * pRegion;
+    size_t regionLength;
+    char * pControlPlaneUrl;
+    size_t controlPlaneUrlLength;
+    SignalRole_t roleType;
+} SignalCreate_t;
 
 typedef struct SignalCreateChannel {
     SignalChannelInfo_t channelInfo;
@@ -196,6 +255,12 @@ typedef struct SignalIceConfigMessage
     SignalIceServer_t iceServer[AWS_ICE_SERVER_MAX_NUM];
     uint32_t iceServerNum;
 } SignalIceConfigMessage_t;
+
+typedef struct SignalGetChannelEndpointRequest
+{
+    uint8_t protocolsBitsMap; /* support multiple propocols. */
+    SignalRole_t role;
+} SignalGetChannelEndpointRequest_t;
 
 /*-----------------------------------------------------------*/
 

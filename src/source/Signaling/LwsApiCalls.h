@@ -26,7 +26,6 @@ extern "C" {
 #define PROTOCOL_INDEX_WSS   1
 
 // API postfix definitions
-#define GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
 #define JOIN_STORAGE_SESSION_API_POSTFIX           "/joinStorageSession"
 #define UPDATE_MEDIA_STORAGE_CONF_API_POSTFIX      "/updateMediaStorageConfiguration"
@@ -39,20 +38,6 @@ extern "C" {
 #define DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
     "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
     "\n\t\"CurrentVersion\": \"%s\"\n}"
-
-// Parameterized string for each tag pair as a JSON object
-#define TAG_PARAM_JSON_OBJ_TEMPLATE "\n\t\t{\"Key\": \"%s\", \"Value\": \"%s\"},"
-
-// Parameterized string for TagStream API - we should have at least one tag
-#define TAGS_PARAM_JSON_TEMPLATE ",\n\t\"Tags\": [%s\n\t]"
-
-// Parameterized string for Get Channel Endpoint API
-#define GET_CHANNEL_ENDPOINT_PARAM_JSON_TEMPLATE                                                                                                     \
-    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
-    "\n\t\"SingleMasterChannelEndpointConfiguration\": {"                                                                                            \
-    "\n\t\t\"Protocols\": [%s],"                                                                                                                     \
-    "\n\t\t\"Role\": \"%s\""                                                                                                                         \
-    "\n\t}\n}"
 
 // Parameterized string for Get Ice Server Config API
 #define GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \

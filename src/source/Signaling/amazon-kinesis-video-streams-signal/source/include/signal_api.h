@@ -6,7 +6,7 @@
 
 /*-----------------------------------------------------------*/
 
-SignalResult_t Signal_createSignal( SignalContext_t *pCtx, char * pAwsRegion, size_t awsRegionLength, char * pControlPlaneUrl, size_t controlPlaneUrlLength, char * pChannelName, size_t channelNameLength );
+SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCreate );
 
 SignalResult_t Signal_setChannelEndpointHttps( SignalContext_t *pCtx, char * pChannelEndpointHttps, size_t channelEndpointHttpsLength );
 
@@ -25,6 +25,10 @@ SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, cha
 SignalResult_t Signal_getCreateChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalCreateChannel_t * pCreateChannel );
 
 SignalResult_t Signal_parseCreateChannelMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalCreateChannel_t *pCreateChannel );
+
+SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalGetChannelEndpointRequest_t * pChannelEndpointRequest );
+
+SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalEndpoints_t * pEndpoints );
 
 SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength );
 

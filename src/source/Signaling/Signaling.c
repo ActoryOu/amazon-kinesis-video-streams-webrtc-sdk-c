@@ -22,6 +22,7 @@ STATUS createSignalingSync(PSignalingClientInfoInternal pClientInfo, PChannelInf
     BOOL cacheFound = FALSE;
     PSignalingFileCacheEntry pFileCacheEntry = NULL;
     SignalResult_t retSignal;
+    SignalCreate_t signalCreate;
 
     CHK(pClientInfo != NULL && pChannelInfo != NULL && pCallbacks != NULL && pCredentialProvider != NULL && ppSignalingClient != NULL,
         STATUS_NULL_ARG);
@@ -165,10 +166,54 @@ STATUS createSignalingSync(PSignalingClientInfoInternal pClientInfo, PChannelInf
     pSignalingClient->diagnosticsLock = MUTEX_CREATE(TRUE);
     CHK(IS_VALID_MUTEX_VALUE(pSignalingClient->diagnosticsLock), STATUS_INVALID_OPERATION);
 
+    MEMSET(&signalCreate, 0x00, sizeof(SignalCreate_t));
+    if (pSignalingClient->pChannelInfo->pControlPlaneUrl != NULL) {
+        signalCreate.controlPlaneUrlLength = strlen(pSignalingClient->pChannelInfo->pControlPlaneUrl);
+        signalCreate.pControlPlaneUrl = pSignalingClient->pChannelInfo->pControlPlaneUrl;
+    }
+    if (pSignalingClient->pChannelInfo->pRegion != NULL) {
+        signalCreate.regionLength = strlen(pSignalingClient->pChannelInfo->pRegion);
+        signalCreate.pRegion = pSignalingClient->pChannelInfo->pRegion;
+    }
+    if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_MASTER) {
+        signalCreate.roleType = SIGNAL_ROLE_MASTER;
+    } else if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_VIEWER) {
+        signalCreate.roleType = SIGNAL_ROLE_VIEWER;
+    } else {
+        /* This should never happen. */
+        CHK(FALSE, STATUS_INVALID_ARG);
+    }
+
+    /* Set channel info. */
+    if (pSignalingClient->pChannelInfo->pChannelArn != NULL) {
+        signalCreate.channelInfo.channelArnLength = strlen(pSignalingClient->pChannelInfo->pChannelArn);
+        signalCreate.channelInfo.pChannelArn = pSignalingClient->pChannelInfo->pChannelArn;
+    }
+
+    if (pSignalingClient->pChannelInfo->pChannelName != NULL) {
+        signalCreate.channelInfo.channelNameLength = strlen(pSignalingClient->pChannelInfo->pChannelName);
+        signalCreate.channelInfo.pChannelName = pSignalingClient->pChannelInfo->pChannelName;
+    }
+    signalCreate.channelInfo.channelType = SIGNAL_CHANNEL_TYPE_SINGLE_MASTER;
+
+    /* Set endpoints info. */
+    if (pSignalingClient->channelEndpointWss != NULL) {
+        signalCreate.endpoints.endpointWebsocketSecureLength = strlen(pSignalingClient->channelEndpointWss);
+        signalCreate.endpoints.pEndpointWebsocketSecure = pSignalingClient->channelEndpointWss;
+    }
+
+    if (pSignalingClient->channelEndpointHttps != NULL) {
+        signalCreate.endpoints.endpointHttpsLength = strlen(pSignalingClient->channelEndpointHttps);
+        signalCreate.endpoints.pEndpointHttps = pSignalingClient->channelEndpointHttps;
+    }
+
+    if (pSignalingClient->channelEndpointWebrtc != NULL) {
+        signalCreate.endpoints.endpointWebrtcLength = strlen(pSignalingClient->channelEndpointWebrtc);
+        signalCreate.endpoints.pEndpointWebrtc = pSignalingClient->channelEndpointWebrtc;
+    }
+
     retSignal = Signal_createSignal(&pSignalingClient->signalContext,
-                                    pSignalingClient->pChannelInfo->pRegion, strlen(pSignalingClient->pChannelInfo->pRegion),
-                                    NULL, 0,
-                                    pSignalingClient->pChannelInfo->pChannelName, strlen(pSignalingClient->pChannelInfo->pChannelName));
+                                    &signalCreate);
     CHK(retSignal == SIGNAL_RESULT_OK, STATUS_INVALID_OPERATION);
 
     // Create the ongoing message list
