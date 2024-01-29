@@ -37,6 +37,7 @@
 #define AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX "/createSignalingChannel"
 #define AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
+#define AWS_JOIN_STORAGE_SESSION_API_POSTFIX "/joinStorageSession"
 
 // Parameterized string for Describe Channel API
 #define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%.*s\"\n}"
@@ -73,6 +74,11 @@
     "\n\t\"ClientId\": \"%.*s\","                                                                                                                      \
     "\n\t\"Service\": \"TURN\""                                                                                                                      \
     "\n}"
+
+#define AWS_JOIN_STORAGE_SESSION_MASTER_PARAM_JSON_TEMPLATE "{\n\t\"channelArn\": \"%.*s\"\n}"
+#define AWS_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE                                                                                    \
+    "{\n\t\"channelArn\": \"%.*s\","                                                                                                                   \
+    "\n\t\"clientId\": \"%.*s\"\n}"
 
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
@@ -266,6 +272,17 @@ typedef struct SignalIceConfigRequest
     char * pClientId;
     size_t clientIdLength;
 } SignalIceConfigRequest_t;
+
+typedef struct SignalJoinStorageSessionRequest
+{
+    const char * pEndpointWebrtc;
+    size_t endpointWebrtcLength;
+    char * pChannelArn;
+    size_t channelArnLength;
+    SignalRole_t role;
+    char * pClientId;
+    size_t clientIdLength;
+} SignalJoinStorageSessionRequest_t;
 
 /*-----------------------------------------------------------*/
 

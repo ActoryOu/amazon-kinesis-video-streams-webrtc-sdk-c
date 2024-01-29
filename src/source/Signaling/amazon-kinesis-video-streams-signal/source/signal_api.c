@@ -115,9 +115,9 @@ SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * p
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
                           (int) pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
-                          (int) strlen(AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX), AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX);
+                          AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -287,9 +287,9 @@ SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char 
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
                           (int) pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
-                          (int) strlen(AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX), AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX);
+                          AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -404,9 +404,9 @@ SignalResult_t Signal_getCreateChannelRequest( SignalContext_t *pCtx, char * pUr
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
                           (int) pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
-                          (int) strlen(AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX), AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX);
+                          AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -586,9 +586,9 @@ SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * p
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
                           (int) pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
-                          (int) strlen(AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX), AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX);
+                          AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -767,9 +767,9 @@ SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t *
 
     if (result == SIGNAL_RESULT_OK) {
         // calculate the length of url
-        length = snprintf(pUrl, *pUrlLength, "%.*s%.*s",
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
                           (int) pIceConfigReqeust->endpointHttpsLength, pIceConfigReqeust->pEndpointHttps,
-                          (int) strlen(AWS_GET_ICE_CONFIG_API_POSTFIX), AWS_GET_ICE_CONFIG_API_POSTFIX);
+                          AWS_GET_ICE_CONFIG_API_POSTFIX);
 
         if (length < 0) { //LCOV_EXCL_BR_LINE
             result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
@@ -899,6 +899,59 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
             /* All parsed. */
             pIceConfigMessage->iceServerNum++;
             break;
+        }
+    }
+
+    return result;
+}
+
+SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalJoinStorageSessionRequest_t * pJoinStorageSessionRequest )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+
+    /* input check */
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL || pJoinStorageSessionRequest == NULL ||
+        pJoinStorageSessionRequest->pChannelArn == NULL || pJoinStorageSessionRequest->pEndpointWebrtc == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // calculate the length of url
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
+                          (int) pJoinStorageSessionRequest->endpointWebrtcLength, pJoinStorageSessionRequest->pEndpointWebrtc,
+                          AWS_JOIN_STORAGE_SESSION_API_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pUrlLength = length;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // Prepare the body for the call
+        if (pJoinStorageSessionRequest->role == SIGNAL_ROLE_MASTER) {
+            snprintf(pBody, *pBodyLength, AWS_JOIN_STORAGE_SESSION_MASTER_PARAM_JSON_TEMPLATE,
+                     (int) pJoinStorageSessionRequest->channelArnLength, pJoinStorageSessionRequest->pChannelArn);
+        } else {
+            snprintf(pBody, *pBodyLength, AWS_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE,
+                     (int) pJoinStorageSessionRequest->channelArnLength, pJoinStorageSessionRequest->pChannelArn,
+                     (int) pJoinStorageSessionRequest->clientIdLength, pJoinStorageSessionRequest->pClientId);
+        }
+        
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pBodyLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pBodyLength = length;
         }
     }
 

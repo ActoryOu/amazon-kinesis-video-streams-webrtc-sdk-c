@@ -1429,22 +1429,26 @@ STATUS joinStorageSessionLws(PSignalingClient pSignalingClient, UINT64 time)
     PLwsCallInfo pLwsCallInfo = NULL;
     PCHAR pResponseStr;
     UINT32 resultLen;
+    SignalResult_t retSignal;
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalJoinStorageSessionRequest_t joinStorageSessionRequest;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelEndpointWebrtc[0] != '\0', STATUS_INTERNAL_ERROR);
+    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
     // Create the API url
-    STRCPY(url, pSignalingClient->channelEndpointWebrtc);
-    STRCAT(url, JOIN_STORAGE_SESSION_API_POSTFIX);
-
-    // Prepare the json params for the call
+    joinStorageSessionRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    joinStorageSessionRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
+    joinStorageSessionRequest.pEndpointWebrtc = pSignalingClient->channelEndpointWebrtc;
+    joinStorageSessionRequest.endpointWebrtcLength = strlen(pSignalingClient->channelEndpointWebrtc);
+    joinStorageSessionRequest.role = getChannelRoleType(pSignalingClient->pChannelInfo->channelRoleType);
     if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_VIEWER) {
-        SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), SIGNALING_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE,
-                 pSignalingClient->channelDescription.channelArn, pSignalingClient->clientInfo.signalingClientInfo.clientId);
-    } else {
-        SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), SIGNALING_JOIN_STORAGE_SESSION_MASTER_PARAM_JSON_TEMPLATE,
-                 pSignalingClient->channelDescription.channelArn);
+        joinStorageSessionRequest.pClientId = pSignalingClient->clientInfo.signalingClientInfo.clientId;
+        joinStorageSessionRequest.clientIdLength = strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId);
     }
+    retSignal = Signal_getJoinStorageSessionRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &joinStorageSessionRequest);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,

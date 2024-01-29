@@ -28,6 +28,8 @@ SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t *
 
 SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalIceConfigMessage_t *pIceConfigMessage );
 
+SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalJoinStorageSessionRequest_t * pJoinStorageSessionRequest );
+
 /*-----------------------------------------------------------*/
 
 #endif /* SIGNAL_API_H */

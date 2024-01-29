@@ -27,7 +27,6 @@ extern "C" {
 
 // API postfix definitions
 #define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
-#define JOIN_STORAGE_SESSION_API_POSTFIX           "/joinStorageSession"
 #define UPDATE_MEDIA_STORAGE_CONF_API_POSTFIX      "/updateMediaStorageConfiguration"
 
 // Signaling protocol name
@@ -46,10 +45,6 @@ extern "C" {
     "\n\t\"Service\": \"TURN\""                                                                                                                      \
     "\n}"
 
-#define SIGNALING_JOIN_STORAGE_SESSION_MASTER_PARAM_JSON_TEMPLATE "{\n\t\"channelArn\": \"%s\"\n}"
-#define SIGNALING_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE                                                                                    \
-    "{\n\t\"channelArn\": \"%s\","                                                                                                                   \
-    "\n\t\"clientId\": \"%s\"\n}"
 #define SIGNALING_UPDATE_STORAGE_CONFIG_PARAM_JSON_TEMPLATE                                                                                          \
     "{\n\t\"StreamARN\": \"%s\","                                                                                                                    \
     "\n\t\"ChannelARN\": \"%s\","                                                                                                                    \
