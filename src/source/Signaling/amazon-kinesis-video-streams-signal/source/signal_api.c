@@ -957,3 +957,51 @@ SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char 
 
     return result;
 }
+
+SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDeleteChannelRequest_t * pDeleteChannelRequest )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+
+    /* input check */
+    if (pCtx == NULL || pUrl == NULL || pBody == NULL || pDeleteChannelRequest == NULL ||
+        pDeleteChannelRequest->pChannelArn == NULL || pDeleteChannelRequest->pVersion == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // calculate the length of url
+        length = snprintf(pUrl, *pUrlLength, "%.*s%s",
+                          (int) pCtx->controlPlaneUrlLength, pCtx->controlPlaneUrl,
+                          AWS_DELETE_SIGNALING_CHANNEL_API_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pUrlLength = length;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // Prepare the body for the call
+        snprintf(pBody, *pBodyLength, AWS_DELETE_CHANNEL_PARAM_JSON_TEMPLATE,
+                 (int) pDeleteChannelRequest->channelArnLength, pDeleteChannelRequest->pChannelArn,
+                 (int) pDeleteChannelRequest->versionLength, pDeleteChannelRequest->pVersion);
+        
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pBodyLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pBodyLength = length;
+        }
+    }
+
+    return result;
+}

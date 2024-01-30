@@ -38,6 +38,7 @@
 #define AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 #define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
 #define AWS_JOIN_STORAGE_SESSION_API_POSTFIX "/joinStorageSession"
+#define AWS_DELETE_SIGNALING_CHANNEL_API_POSTFIX "/deleteSignalingChannel"
 
 // Parameterized string for Describe Channel API
 #define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%.*s\"\n}"
@@ -79,6 +80,11 @@
 #define AWS_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE                                                                                    \
     "{\n\t\"channelArn\": \"%.*s\","                                                                                                                   \
     "\n\t\"clientId\": \"%.*s\"\n}"
+
+// Parameterized string for Delete Channel API
+#define AWS_DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
+    "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
+    "\n\t\"CurrentVersion\": \"%.*s\"\n}"
 
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
@@ -283,6 +289,14 @@ typedef struct SignalJoinStorageSessionRequest
     char * pClientId;
     size_t clientIdLength;
 } SignalJoinStorageSessionRequest_t;
+
+typedef struct SignalDeleteChannelRequest
+{
+    char * pChannelArn;
+    size_t channelArnLength;
+    char * pVersion;
+    size_t versionLength;
+} SignalDeleteChannelRequest_t;
 
 /*-----------------------------------------------------------*/
 

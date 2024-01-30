@@ -26,24 +26,7 @@ extern "C" {
 #define PROTOCOL_INDEX_WSS   1
 
 // API postfix definitions
-#define DELETE_SIGNALING_CHANNEL_API_POSTFIX       "/deleteSignalingChannel"
 #define UPDATE_MEDIA_STORAGE_CONF_API_POSTFIX      "/updateMediaStorageConfiguration"
-
-// Signaling protocol name
-#define SIGNALING_CHANNEL_PROTOCOL                 "\"WSS\", \"HTTPS\""
-#define SIGNALING_CHANNEL_PROTOCOL_W_MEDIA_STORAGE "\"WSS\", \"HTTPS\", \"WEBRTC\""
-
-// Parameterized string for Delete Channel API
-#define DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
-    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
-    "\n\t\"CurrentVersion\": \"%s\"\n}"
-
-// Parameterized string for Get Ice Server Config API
-#define GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
-    "{\n\t\"ChannelARN\": \"%s\","                                                                                                                   \
-    "\n\t\"ClientId\": \"%s\","                                                                                                                      \
-    "\n\t\"Service\": \"TURN\""                                                                                                                      \
-    "\n}"
 
 #define SIGNALING_UPDATE_STORAGE_CONFIG_PARAM_JSON_TEMPLATE                                                                                          \
     "{\n\t\"StreamARN\": \"%s\","                                                                                                                    \

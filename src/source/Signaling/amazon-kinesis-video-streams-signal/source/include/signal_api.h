@@ -30,6 +30,8 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
 
 SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalJoinStorageSessionRequest_t * pJoinStorageSessionRequest );
 
+SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDeleteChannelRequest_t * pDeleteChannelRequest );
+
 /*-----------------------------------------------------------*/
 
 #endif /* SIGNAL_API_H */

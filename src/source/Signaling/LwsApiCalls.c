@@ -1212,6 +1212,10 @@ STATUS deleteChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     CHAR paramsJson[MAX_JSON_PARAMETER_STRING_LEN];
     PLwsCallInfo pLwsCallInfo = NULL;
     SIZE_T result;
+    SignalResult_t retSignal;
+    SIZE_T urlLength = sizeof(url);
+    SIZE_T paramsJsonLength = sizeof(paramsJson);
+    SignalDeleteChannelRequest_t deleteChannelRequest;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
@@ -1223,12 +1227,11 @@ STATUS deleteChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     }
 
     // Create the API url
-    STRCPY(url, pSignalingClient->pChannelInfo->pControlPlaneUrl);
-    STRCAT(url, DELETE_SIGNALING_CHANNEL_API_POSTFIX);
-
-    // Prepare the json params for the call
-    SNPRINTF(paramsJson, ARRAY_SIZE(paramsJson), DELETE_CHANNEL_PARAM_JSON_TEMPLATE, pSignalingClient->channelDescription.channelArn,
-             pSignalingClient->channelDescription.updateVersion);
+    deleteChannelRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    deleteChannelRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
+    deleteChannelRequest.pVersion = pSignalingClient->channelDescription.updateVersion;
+    deleteChannelRequest.versionLength = strlen(pSignalingClient->channelDescription.updateVersion);
+    retSignal = Signal_getDeleteChannelRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &deleteChannelRequest);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
