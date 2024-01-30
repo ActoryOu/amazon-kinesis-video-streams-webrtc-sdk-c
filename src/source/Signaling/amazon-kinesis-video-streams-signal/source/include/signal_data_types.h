@@ -33,18 +33,16 @@
 #define SIGNAL_STRING_VIEWER "VIEWER"
 
 #define AWS_DESCRIBE_SIGNALING_CHANNEL_API_POSTFIX "/describeSignalingChannel"
-#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX "/describeMediaStorageConfiguration"
-#define AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX "/createSignalingChannel"
-#define AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
-#define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
-#define AWS_JOIN_STORAGE_SESSION_API_POSTFIX "/joinStorageSession"
-#define AWS_DELETE_SIGNALING_CHANNEL_API_POSTFIX "/deleteSignalingChannel"
 
 // Parameterized string for Describe Channel API
 #define AWS_DESCRIBE_CHANNEL_PARAM_JSON_TEMPLATE    "{\n\t\"ChannelName\": \"%.*s\"\n}"
 
+#define AWS_DESCRIBE_MEDIA_STORAGE_CONF_API_POSTFIX "/describeMediaStorageConfiguration"
+
 // Parameterized string for Desceibe Media Storage Config API
 #define AWS_DESCRIBE_MEDIA_STORAGE_CONF_PARAM_JSON_TEMPLATE "{\n\t\"ChannelARN\": \"%.*s\"\n}"
+
+#define AWS_CREATE_SIGNALING_CHANNEL_API_POSTFIX "/createSignalingChannel"
 
 // Parameterized string for Create Channel API
 #define AWS_CREATE_CHANNEL_PARAM_JSON_TEMPLATE_PREFIX                                                                                                           \
@@ -56,10 +54,12 @@
 #define AWS_CREATE_CHANNEL_PARAM_JSON_TEMPLATE_POSTFIX "\n}"
 
 #define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_PREFIX ",\n\t\"Tags\": ["
-#define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_POSTFIX "\n\t]"
 #define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_TEMPLATE \
     "\n\t\t{\n\t\t\t\"Key\": \"%.*s\"," \
     "\n\t\t\t\"Value\": \"%.*s\"\n\t\t}"
+#define AWS_CREATE_CHANNEL_PARAM_JSON_TAGS_POSTFIX "\n\t]"
+
+#define AWS_GET_SIGNALING_CHANNEL_ENDPOINT_API_POSTFIX "/getSignalingChannelEndpoint"
 
 // Parameterized string for Get Channel Endpoint API
 #define AWS_GET_CHANNEL_ENDPOINT_PARAM_JSON_TEMPLATE                                                                                                     \
@@ -69,6 +69,8 @@
     "\n\t\t\"Role\": \"%s\""                                                                                                                         \
     "\n\t}\n}"
 
+#define AWS_GET_ICE_CONFIG_API_POSTFIX "/v1/get-ice-server-config"
+
 // Parameterized string for Get Ice Server Config API
 #define AWS_GET_ICE_CONFIG_PARAM_JSON_TEMPLATE                                                                                                           \
     "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
@@ -76,17 +78,22 @@
     "\n\t\"Service\": \"TURN\""                                                                                                                      \
     "\n}"
 
+#define AWS_JOIN_STORAGE_SESSION_API_POSTFIX "/joinStorageSession"
+
+// Parameterized string for Join Storage Session API
 #define AWS_JOIN_STORAGE_SESSION_MASTER_PARAM_JSON_TEMPLATE "{\n\t\"channelArn\": \"%.*s\"\n}"
 #define AWS_JOIN_STORAGE_SESSION_VIEWER_PARAM_JSON_TEMPLATE                                                                                    \
     "{\n\t\"channelArn\": \"%.*s\","                                                                                                                   \
     "\n\t\"clientId\": \"%.*s\"\n}"
+
+#define AWS_DELETE_SIGNALING_CHANNEL_API_POSTFIX "/deleteSignalingChannel"
 
 // Parameterized string for Delete Channel API
 #define AWS_DELETE_CHANNEL_PARAM_JSON_TEMPLATE                                                                                                           \
     "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
     "\n\t\"CurrentVersion\": \"%.*s\"\n}"
 
-// Parameter names for Signaling connect URL
+// Parameter names for Connect Websocket Secure Endpoint
 #define AWS_SIGNALING_ROLE_PARAM_NAME         "X-Amz-Role"
 #define AWS_SIGNALING_CHANNEL_NAME_PARAM_NAME "X-Amz-ChannelName"
 #define AWS_SIGNALING_CHANNEL_ARN_PARAM_NAME  "X-Amz-ChannelARN"
