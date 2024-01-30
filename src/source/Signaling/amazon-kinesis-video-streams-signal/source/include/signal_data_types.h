@@ -86,6 +86,12 @@
     "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
     "\n\t\"CurrentVersion\": \"%.*s\"\n}"
 
+// Parameter names for Signaling connect URL
+#define AWS_SIGNALING_ROLE_PARAM_NAME         "X-Amz-Role"
+#define AWS_SIGNALING_CHANNEL_NAME_PARAM_NAME "X-Amz-ChannelName"
+#define AWS_SIGNALING_CHANNEL_ARN_PARAM_NAME  "X-Amz-ChannelARN"
+#define AWS_SIGNALING_CLIENT_ID_PARAM_NAME    "X-Amz-ClientId"
+
 #define AWS_REGION_MAX_LENGTH ( 50 )
 #define AWS_CONTROL_PLANE_URL_MAX_LENGTH ( 256 )
 #define AWS_SIGNALING_CLIENT_ID_MAX_LENGTH ( 256 )
@@ -177,7 +183,6 @@ typedef struct SignalContext
     size_t regionLength;
     char controlPlaneUrl[AWS_CONTROL_PLANE_URL_MAX_LENGTH];
     size_t controlPlaneUrlLength;
-    SignalRole_t roleType;
     char channelName[AWS_MAX_CHANNEL_NAME_LEN];
     size_t channelNameLength;
 } SignalContext_t;
@@ -297,6 +302,17 @@ typedef struct SignalDeleteChannelRequest
     char * pVersion;
     size_t versionLength;
 } SignalDeleteChannelRequest_t;
+
+typedef struct SignalConnectWssEndpointRequest
+{
+    const char * pEndpointWebsocketSecure;
+    size_t endpointWebsocketSecureLength;
+    char * pChannelArn;
+    size_t channelArnLength;
+    SignalRole_t role;
+    char * pClientId;
+    size_t clientIdLength;
+} SignalConnectWssEndpointRequest_t;
 
 /*-----------------------------------------------------------*/
 

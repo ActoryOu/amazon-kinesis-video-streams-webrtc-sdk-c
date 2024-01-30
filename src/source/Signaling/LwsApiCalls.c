@@ -1340,19 +1340,26 @@ STATUS connectSignalingChannelLws(PSignalingClient pSignalingClient, UINT64 time
     BOOL locked = FALSE;
     SERVICE_CALL_RESULT callResult = SERVICE_CALL_RESULT_NOT_SET;
     UINT64 timeout;
+    SignalResult_t retSignal;
+    SIZE_T urlLength = sizeof(url);
+    SignalConnectWssEndpointRequest_t connectWssEndpointRequest;
 
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelEndpointWss[0] != '\0', STATUS_INTERNAL_ERROR);
+    CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
-    // Prepare the json params for the call
+    MEMSET(&connectWssEndpointRequest, 0, sizeof(SignalConnectWssEndpointRequest_t));
+    connectWssEndpointRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
+    connectWssEndpointRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
+    connectWssEndpointRequest.pEndpointWebsocketSecure = pSignalingClient->channelEndpointWss;
+    connectWssEndpointRequest.endpointWebsocketSecureLength = strlen(pSignalingClient->channelEndpointWss);
+    connectWssEndpointRequest.role = getChannelRoleType(pSignalingClient->pChannelInfo->channelRoleType);
     if (pSignalingClient->pChannelInfo->channelRoleType == SIGNALING_CHANNEL_ROLE_TYPE_VIEWER) {
-        SNPRINTF(url, ARRAY_SIZE(url), SIGNALING_ENDPOINT_VIEWER_URL_WSS_TEMPLATE, pSignalingClient->channelEndpointWss,
-                 SIGNALING_CHANNEL_ARN_PARAM_NAME, pSignalingClient->channelDescription.channelArn, SIGNALING_CLIENT_ID_PARAM_NAME,
-                 pSignalingClient->clientInfo.signalingClientInfo.clientId);
-    } else {
-        SNPRINTF(url, ARRAY_SIZE(url), SIGNALING_ENDPOINT_MASTER_URL_WSS_TEMPLATE, pSignalingClient->channelEndpointWss,
-                 SIGNALING_CHANNEL_ARN_PARAM_NAME, pSignalingClient->channelDescription.channelArn);
+        connectWssEndpointRequest.pClientId = pSignalingClient->clientInfo.signalingClientInfo.clientId;
+        connectWssEndpointRequest.clientIdLength = strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId);
     }
+    retSignal = Signal_getConnectWssEndpointRequest( &pSignalingClient->signalContext, url, &urlLength, NULL, NULL, &connectWssEndpointRequest );
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, NULL, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,
@@ -1452,6 +1459,7 @@ STATUS joinStorageSessionLws(PSignalingClient pSignalingClient, UINT64 time)
         joinStorageSessionRequest.clientIdLength = strlen(pSignalingClient->clientInfo.signalingClientInfo.clientId);
     }
     retSignal = Signal_getJoinStorageSessionRequest(&pSignalingClient->signalContext, url, &urlLength, paramsJson, &paramsJsonLength, &joinStorageSessionRequest);
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Create the request info with the body
     CHK_STATUS(createRequestInfo(url, paramsJson, pSignalingClient->pChannelInfo->pRegion, pSignalingClient->pChannelInfo->pCertPath, NULL, NULL,

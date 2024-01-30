@@ -34,16 +34,6 @@ extern "C" {
     "\n\t\"StorageStatus\": \"%s\""                                                                                                                  \
     "\n}"
 
-// Parameter names for Signaling connect URL
-#define SIGNALING_ROLE_PARAM_NAME         "X-Amz-Role"
-#define SIGNALING_CHANNEL_NAME_PARAM_NAME "X-Amz-ChannelName"
-#define SIGNALING_CHANNEL_ARN_PARAM_NAME  "X-Amz-ChannelARN"
-#define SIGNALING_CLIENT_ID_PARAM_NAME    "X-Amz-ClientId"
-
-// Parameterized string for WSS connect
-#define SIGNALING_ENDPOINT_MASTER_URL_WSS_TEMPLATE "%s?%s=%s"
-#define SIGNALING_ENDPOINT_VIEWER_URL_WSS_TEMPLATE "%s?%s=%s&%s=%s"
-
 #define SIGNALING_SDP_TYPE_OFFER       "SDP_OFFER"
 #define SIGNALING_SDP_TYPE_ANSWER      "SDP_ANSWER"
 #define SIGNALING_ICE_CANDIDATE        "ICE_CANDIDATE"

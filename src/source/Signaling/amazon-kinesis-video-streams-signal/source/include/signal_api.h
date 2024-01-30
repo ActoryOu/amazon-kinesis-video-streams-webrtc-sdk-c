@@ -32,6 +32,8 @@ SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char 
 
 SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDeleteChannelRequest_t * pDeleteChannelRequest );
 
+SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalConnectWssEndpointRequest_t * pConnectWssEndpointRequest );
+
 /*-----------------------------------------------------------*/
 
 #endif /* SIGNAL_API_H */

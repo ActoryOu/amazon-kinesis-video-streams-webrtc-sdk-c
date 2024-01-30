@@ -1005,3 +1005,52 @@ SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUr
 
     return result;
 }
+
+SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalConnectWssEndpointRequest_t * pConnectWssEndpointRequest )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+
+    /* input check */
+    if (pCtx == NULL || pUrl == NULL || pConnectWssEndpointRequest == NULL ||
+        pConnectWssEndpointRequest->pChannelArn == NULL || pConnectWssEndpointRequest->pEndpointWebsocketSecure == NULL ||
+        (pConnectWssEndpointRequest->role != SIGNAL_ROLE_MASTER && pConnectWssEndpointRequest->role != SIGNAL_ROLE_VIEWER)) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    } else if (pConnectWssEndpointRequest->role == SIGNAL_ROLE_VIEWER && pConnectWssEndpointRequest->pClientId == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        // calculate the length of url
+        if (pConnectWssEndpointRequest->role == SIGNAL_ROLE_MASTER) {
+            length = snprintf(pUrl, *pUrlLength, "%.*s?%s=%.*s",
+                              (int) pConnectWssEndpointRequest->endpointWebsocketSecureLength, pConnectWssEndpointRequest->pEndpointWebsocketSecure,
+                              AWS_SIGNALING_CHANNEL_ARN_PARAM_NAME,
+                              (int) pConnectWssEndpointRequest->channelArnLength, pConnectWssEndpointRequest->pChannelArn);
+        } else {
+            length = snprintf(pUrl, *pUrlLength, "%.*s?%s=%.*s&%s=%.*s",
+                              (int) pConnectWssEndpointRequest->endpointWebsocketSecureLength, pConnectWssEndpointRequest->pEndpointWebsocketSecure,
+                              AWS_SIGNALING_CHANNEL_ARN_PARAM_NAME,
+                              (int) pConnectWssEndpointRequest->channelArnLength, pConnectWssEndpointRequest->pChannelArn,
+                              AWS_SIGNALING_CLIENT_ID_PARAM_NAME,
+                              (int) pConnectWssEndpointRequest->clientIdLength, pConnectWssEndpointRequest->pClientId);
+        }
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= *pUrlLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            *pUrlLength = length;
+        }
+    }
+
+    /* No body for connecting websocket secure endpoint.
+     * Reserve body parameters for future use. */
+    (void) pBody;
+    (void) pBodyLength;
+
+    return result;
+}
