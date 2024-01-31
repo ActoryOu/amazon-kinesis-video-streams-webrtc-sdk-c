@@ -1165,11 +1165,9 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
             pSignalingClient->iceConfigs[i].password[MAX_ICE_CONFIG_USER_NAME_LEN] = '\0';
         }
 
-        if (iceConfigMessage.iceServer[i].pTtl != NULL) {
-            CHK_STATUS(STRTOUI64((PCHAR)iceConfigMessage.iceServer[i].pTtl, (PCHAR)iceConfigMessage.iceServer[i].pTtl + iceConfigMessage.iceServer[i].ttlLength, 10, &ttl));
-
+        if (iceConfigMessage.iceServer[i].messageTtlSeconds > 0) {
             // NOTE: Ttl value is in seconds
-            pSignalingClient->iceConfigs[i].ttl = ttl * HUNDREDS_OF_NANOS_IN_A_SECOND;
+            pSignalingClient->iceConfigs[i].ttl = (UINT64) iceConfigMessage.iceServer[i].messageTtlSeconds * HUNDREDS_OF_NANOS_IN_A_SECOND;
         }
 
         if (iceConfigMessage.iceServer[i].pUris[0] != NULL) {

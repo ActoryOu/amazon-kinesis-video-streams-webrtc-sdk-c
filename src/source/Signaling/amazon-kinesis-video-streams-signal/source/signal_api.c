@@ -158,7 +158,7 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
     const char *pChannelInfoBuffer;
     size_t channelInfoBufferLength;
     size_t channelInfoStart = 0, channelInfoNext = 0;
-    char ttlSeconds[AWS_MESSAGE_TTL_SECONDS_BUFFER_MAX] = { 0 };
+    char ttlSecondsBuffer[AWS_MESSAGE_CHANNEL_TTL_SECONDS_BUFFER_MAX] = { 0 };
 
     /* input check */
     if (pCtx == NULL || pMessage == NULL || pDescribeChannel == NULL) {
@@ -235,16 +235,16 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
 
                 if (jsonResult == JSONSuccess) {
                     if (strncmp(pair.key, "MessageTtlSeconds", pair.keyLength) == 0) {
-                        if( pair.valueLength >= AWS_MESSAGE_TTL_SECONDS_BUFFER_MAX ) {
+                        if( pair.valueLength >= AWS_MESSAGE_CHANNEL_TTL_SECONDS_BUFFER_MAX ) {
                             /* Unexpect TTL value from cloud. */
                             result = SIGNAL_RESULT_INVALID_TTL;
                             break;
                         }
 
-                        strncpy(ttlSeconds, pair.value, pair.valueLength);
-                        pDescribeChannel->messageTtlSeconds = (uint16_t) strtoul(ttlSeconds, NULL, 10);
+                        strncpy(ttlSecondsBuffer, pair.value, pair.valueLength);
+                        pDescribeChannel->messageTtlSeconds = (uint32_t) strtoul(ttlSecondsBuffer, NULL, 10);
 
-                        if (pDescribeChannel->messageTtlSeconds < AWS_MESSAGE_TTL_SECONDS_MIN || pDescribeChannel->messageTtlSeconds > AWS_MESSAGE_TTL_SECONDS_MAX) {
+                        if (pDescribeChannel->messageTtlSeconds < AWS_MESSAGE_CHANNEL_TTL_SECONDS_MIN || pDescribeChannel->messageTtlSeconds > AWS_MESSAGE_CHANNEL_TTL_SECONDS_MAX) {
                             /* Unexpect TTL value from cloud. */
                             result = SIGNAL_RESULT_INVALID_TTL;
                         }
@@ -814,6 +814,7 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
     const char *pIceSingleServerBuffer;
     size_t iceSingleServerBufferLength;
     size_t iceSingleServerStart = 0, iceSingleServerNext = 0;
+    char ttlSecondsBuffer[AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX] = { 0 };
 
     /* input check */
     if (pCtx == NULL || pMessage == NULL || pIceConfigMessage == NULL) {
@@ -864,26 +865,58 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
                 if (strncmp(pair.key, "Password", pair.keyLength) == 0) {
                     if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword != NULL) {
                         pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
                     }
                     
                     pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword = pair.value;
                     pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].passwordLength = pair.valueLength;
                 } else if (strncmp(pair.key, "Ttl", pair.keyLength) == 0) {
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pTtl != NULL) {
-                        pIceConfigMessage->iceServerNum++;
+                    if( pair.valueLength >= AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX ) {
+                        /* Unexpect TTL value from cloud. */
+                        result = SIGNAL_RESULT_INVALID_TTL;
+                        break;
                     }
-                    
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pTtl = pair.value;
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].ttlLength = pair.valueLength;
+
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds != 0) {
+                        pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
+                    }
+
+                    strncpy(ttlSecondsBuffer, pair.value, pair.valueLength);
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds = (uint32_t) strtoul(ttlSecondsBuffer, NULL, 10);
+
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds < AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MIN ||
+                        pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds > AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MAX) {
+                        /* Unexpect TTL value from cloud. */
+                        result = SIGNAL_RESULT_INVALID_TTL;
+                    }
                 } else if (strncmp(pair.key, "Uris", pair.keyLength) == 0) {
                     if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUris[0] != NULL) {
                         pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
                     }
                     
                     updateUris(&pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum], pair.value, pair.valueLength);
                 } else if (strncmp(pair.key, "Username", pair.keyLength) == 0) {
                     if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName != NULL) {
                         pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
                     }
                     
                     pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName = pair.value;

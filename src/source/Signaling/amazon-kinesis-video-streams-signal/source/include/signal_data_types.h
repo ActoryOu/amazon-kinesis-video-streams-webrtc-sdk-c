@@ -114,9 +114,13 @@
 #define AWS_ICE_SERVER_MAX_NUM ( 5 )
 #define AWS_ICE_SERVER_MAX_URIS ( 5 )
 
-#define AWS_MESSAGE_TTL_SECONDS_BUFFER_MAX ( 5 )
-#define AWS_MESSAGE_TTL_SECONDS_MIN ( 5 )
-#define AWS_MESSAGE_TTL_SECONDS_MAX ( 120 )
+#define AWS_MESSAGE_CHANNEL_TTL_SECONDS_BUFFER_MAX ( 5 )
+#define AWS_MESSAGE_CHANNEL_TTL_SECONDS_MIN ( 5 )
+#define AWS_MESSAGE_CHANNEL_TTL_SECONDS_MAX ( 120 )
+
+#define AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX ( 7 )
+#define AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MIN ( 30 )
+#define AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MAX ( 86400 )
 
 typedef enum SignalResult
 {
@@ -171,7 +175,7 @@ typedef struct SignalChannelInfo
     size_t versionLength;
     const char * pCreationTime;
     size_t creationTimeLength;
-    uint16_t messageTtlSeconds;
+    uint32_t messageTtlSeconds;
 } SignalChannelInfo_t;
 
 typedef struct SignalEndpoints
@@ -237,7 +241,7 @@ typedef struct SignalDescribeChannel
     size_t versionLength;
     const char * pCreationTime;
     size_t creationTimeLength;
-    uint16_t messageTtlSeconds;
+    uint32_t messageTtlSeconds;
 } SignalDescribeChannel_t;
 
 typedef struct SignalMediaStorageConfigRequest
@@ -258,8 +262,7 @@ typedef struct SignalIceServer
 {
     const char * pPassword;
     size_t passwordLength;
-    const char * pTtl;
-    size_t ttlLength;
+    uint32_t messageTtlSeconds;
     const char * pUris[AWS_ICE_SERVER_MAX_URIS];
     size_t urisLength[AWS_ICE_SERVER_MAX_URIS];
     uint32_t urisNum;
