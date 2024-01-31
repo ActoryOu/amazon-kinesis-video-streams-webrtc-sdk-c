@@ -319,7 +319,7 @@ STATUS serializeSessionDescription(PSessionDescription pSessionDescription, PCHA
         }
     }
 
-    CHK(SdpSerializer_Finalize( &(ctx), &(pSdpMessage), &(sdpMessageLength))==SDP_RESULT_OK, STATUS_INTERNAL_ERROR);
+    CHK(SdpSerializer_Finalize( &(ctx), &(pSdpMessage), (size_t *)&(sdpMessageLength))==SDP_RESULT_OK, STATUS_INTERNAL_ERROR);
     
     *sdpBytesLength = sdpMessageLength + 1U; // NULL terminator
 

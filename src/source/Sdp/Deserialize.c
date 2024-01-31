@@ -90,7 +90,7 @@ STATUS deserializeSessionDescription(PSessionDescription pSessionDescription, PC
     CHK(SdpDeserializer_Init( &( ctx ), sdpBytes, strlen( sdpBytes ) ) == SDP_RESULT_OK, STATUS_INTERNAL_ERROR);
     
     for( ; sdpResult == SDP_RESULT_OK; ) {
-        sdpResult = SdpDeserializer_GetNext( &( ctx ), &( type ), &( pValue ), &( valueLength ) );
+        sdpResult = SdpDeserializer_GetNext( &( ctx ), &( type ), (const char **) &( pValue ), (size_t *) &( valueLength ) );
 
         if (sdpResult == SDP_RESULT_OK) {
             /* Do nothing. */
