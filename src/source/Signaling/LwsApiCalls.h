@@ -48,38 +48,6 @@ extern "C" {
 // Max value length for the status code
 #define MAX_SIGNALING_STATUS_MESSAGE_LEN 16
 
-// Send message JSON template
-#define SIGNALING_SEND_MESSAGE_TEMPLATE                                                                                                              \
-    "{\n"                                                                                                                                            \
-    "\t\"action\": \"%s\",\n"                                                                                                                        \
-    "\t\"RecipientClientId\": \"%.*s\",\n"                                                                                                           \
-    "\t\"MessagePayload\": \"%s\"%s\n"                                                                                                               \
-    "}"
-
-// Send message JSON template with correlation id
-#define SIGNALING_SEND_MESSAGE_TEMPLATE_WITH_CORRELATION_ID                                                                                          \
-    "{\n"                                                                                                                                            \
-    "\t\"action\": \"%s\",\n"                                                                                                                        \
-    "\t\"RecipientClientId\": \"%.*s\",\n"                                                                                                           \
-    "\t\"MessagePayload\": \"%s\",\n"                                                                                                                \
-    "\t\"CorrelationId\": \"%.*s\"%s\n"                                                                                                              \
-    "}"
-
-#define SIGNALING_ICE_SERVER_LIST_TEMPLATE_START                                                                                                     \
-    ",\n"                                                                                                                                            \
-    "\t\"IceServerList\": ["
-
-#define SIGNALING_ICE_SERVER_LIST_TEMPLATE_END "\n\t]"
-
-#define SIGNALING_ICE_SERVER_TEMPLATE                                                                                                                \
-    "\n"                                                                                                                                             \
-    "\t\t{\n"                                                                                                                                        \
-    "\t\t\t\"Password\": \"%s\",\n"                                                                                                                  \
-    "\t\t\t\"Ttl\": %" PRIu64 ",\n"                                                                                                                  \
-    "\t\t\t\"Uris\": [%s],\n"                                                                                                                        \
-    "\t\t\t\"Username\": \"%s\"\n"                                                                                                                   \
-    "\t\t},"
-
 // max length for http date header, must follow RFC 7231, should be less than 32 characters
 #define MAX_DATE_HEADER_BUFFER_LENGTH 64
 

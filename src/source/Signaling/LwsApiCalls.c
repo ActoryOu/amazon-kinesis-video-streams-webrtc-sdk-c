@@ -1713,33 +1713,36 @@ STATUS sendLwsMessage(PSignalingClient pSignalingClient, SIGNALING_MESSAGE_TYPE 
     ENTERS();
     STATUS retStatus = STATUS_SUCCESS;
     CHAR encodedMessage[MAX_SESSION_DESCRIPTION_INIT_SDP_LEN + 1];
-    CHAR encodedIceConfig[MAX_ENCODED_ICE_SERVER_INFOS_STR_LEN + 1];
-    CHAR encodedUris[MAX_ICE_SERVER_URI_STR_LEN + 1];
     UINT32 size, writtenSize, correlationLen, iceCount, uriCount, urisLen, iceConfigLen;
     BOOL awaitForResponse;
-    PCHAR pMessageType;
     UINT64 curTime;
+    SignalResult_t retSignal;
+    SignalWssSendMessage_t wssSendMessage;
+    SignalIceConfigMessage_t iceConfigMessage;
+    SIZE_T bufferSize;
 
     // Ensure we are in a connected state
     CHK_STATUS(acceptSignalingStateMachineState(pSignalingClient, SIGNALING_STATE_CONNECTED | SIGNALING_STATE_JOIN_SESSION_CONNECTED));
 
     CHK(pSignalingClient != NULL && pSignalingClient->pOngoingCallInfo != NULL, STATUS_NULL_ARG);
 
+    MEMSET(&wssSendMessage, 0, sizeof(SignalWssSendMessage_t));
+    MEMSET(&iceConfigMessage, 0, sizeof(SignalIceConfigMessage_t));
+
     // Prepare the buffer to send
     switch (messageType) {
         case SIGNALING_MESSAGE_TYPE_OFFER:
-            pMessageType = (PCHAR) SIGNALING_SDP_TYPE_OFFER;
+            wssSendMessage.messageType = SIGNAL_MESSAGE_TYPE_SDP_OFFER;
             break;
         case SIGNALING_MESSAGE_TYPE_ANSWER:
-            pMessageType = (PCHAR) SIGNALING_SDP_TYPE_ANSWER;
+            wssSendMessage.messageType = SIGNAL_MESSAGE_TYPE_SDP_ANSWER;
             break;
         case SIGNALING_MESSAGE_TYPE_ICE_CANDIDATE:
-            pMessageType = (PCHAR) SIGNALING_ICE_CANDIDATE;
+            wssSendMessage.messageType = SIGNAL_MESSAGE_TYPE_ICE_CANDIDATE;
             break;
         default:
             CHK(FALSE, STATUS_INVALID_ARG);
     }
-    DLOGD("%s", pMessageType);
     DLOGD("%s", pMessage);
     // Calculate the lengths if not specified
     if (messageLen == 0) {
@@ -1762,61 +1765,45 @@ STATUS sendLwsMessage(PSignalingClient pSignalingClient, SIGNALING_MESSAGE_TYPE 
     size = SIZEOF(pSignalingClient->pOngoingCallInfo->sendBuffer) - LWS_PRE;
     CHK(writtenSize <= size, STATUS_SIGNALING_MAX_MESSAGE_LEN_AFTER_ENCODING);
 
-    // Start off with an empty string
-    encodedIceConfig[0] = '\0';
+    wssSendMessage.base64EncodedMessageLength = writtenSize;
+    wssSendMessage.pBase64EncodedMessage = encodedMessage;
+    wssSendMessage.correlationIdLength = correlationLen;
+    wssSendMessage.pCorrelationId = pCorrelationId;
+    wssSendMessage.recipientClientIdLength = strlen(peerClientId);
+    wssSendMessage.pRecipientClientId = peerClientId;
 
     // In case of an Offer, package the ICE candidates only if we have a set of non-expired ICE configs
     if (messageType == SIGNALING_MESSAGE_TYPE_OFFER && pSignalingClient->iceConfigCount != 0 &&
         (curTime = SIGNALING_GET_CURRENT_TIME(pSignalingClient)) <= pSignalingClient->iceConfigExpiration &&
         STATUS_SUCCEEDED(validateIceConfiguration(pSignalingClient))) {
-        // Start the ice infos by copying the preamble, then the main body and then the ending
-        STRCPY(encodedIceConfig, SIGNALING_ICE_SERVER_LIST_TEMPLATE_START);
-        iceConfigLen = ARRAY_SIZE(SIGNALING_ICE_SERVER_LIST_TEMPLATE_START) - 1; // remove the null terminator
-
+        wssSendMessage.pIceServerList = &iceConfigMessage;
+        iceConfigMessage.iceServerNum = pSignalingClient->iceConfigCount;
         for (iceCount = 0; iceCount < pSignalingClient->iceConfigCount; iceCount++) {
-            encodedUris[0] = '\0';
+            iceConfigMessage.iceServer[iceCount].pUserName = pSignalingClient->iceConfigs[iceCount].userName;
+            iceConfigMessage.iceServer[iceCount].userNameLength = strlen(pSignalingClient->iceConfigs[iceCount].userName);
+            iceConfigMessage.iceServer[iceCount].pPassword = pSignalingClient->iceConfigs[iceCount].password;
+            iceConfigMessage.iceServer[iceCount].passwordLength = strlen(pSignalingClient->iceConfigs[iceCount].password);
+            iceConfigMessage.iceServer[iceCount].messageTtlSeconds = (pSignalingClient->iceConfigs[iceCount].ttl - (curTime - pSignalingClient->iceConfigTime)) / HUNDREDS_OF_NANOS_IN_A_SECOND;
+            iceConfigMessage.iceServer[iceCount].urisNum = pSignalingClient->iceConfigs[iceCount].uriCount;
             for (uriCount = 0; uriCount < pSignalingClient->iceConfigs[iceCount].uriCount; uriCount++) {
-                STRCAT(encodedUris, "\"");
-                STRCAT(encodedUris, pSignalingClient->iceConfigs[iceCount].uris[uriCount]);
-                STRCAT(encodedUris, "\",");
+                iceConfigMessage.iceServer[iceCount].urisLength[uriCount] = strlen(pSignalingClient->iceConfigs[iceCount].uris[uriCount]);
+                iceConfigMessage.iceServer[iceCount].pUris[uriCount] = pSignalingClient->iceConfigs[iceCount].uris[uriCount];
             }
-
-            // remove the last comma
-            urisLen = STRLEN(encodedUris);
-            encodedUris[--urisLen] = '\0';
-
-            // Construct the encoded ice config
-            // NOTE: We need to subtract the passed time to get the TTL of the expiration correct
-            writtenSize = (UINT32) SNPRINTF(encodedIceConfig + iceConfigLen, MAX_ICE_SERVER_INFO_STR_LEN, SIGNALING_ICE_SERVER_TEMPLATE,
-                                            pSignalingClient->iceConfigs[iceCount].password,
-                                            (pSignalingClient->iceConfigs[iceCount].ttl - (curTime - pSignalingClient->iceConfigTime)) /
-                                                HUNDREDS_OF_NANOS_IN_A_SECOND,
-                                            encodedUris, pSignalingClient->iceConfigs[iceCount].userName);
-            CHK(writtenSize <= MAX_ICE_SERVER_INFO_STR_LEN, STATUS_SIGNALING_MAX_MESSAGE_LEN_AFTER_ENCODING);
-            iceConfigLen += writtenSize;
         }
-
-        // Get rid of the last comma
-        iceConfigLen--;
-
-        // Closing the JSON array
-        STRCPY(encodedIceConfig + iceConfigLen, SIGNALING_ICE_SERVER_LIST_TEMPLATE_END);
     }
 
     // Prepare json message
-    if (correlationLen == 0) {
-        writtenSize = (UINT32) SNPRINTF((PCHAR) (pSignalingClient->pOngoingCallInfo->sendBuffer + LWS_PRE), size, SIGNALING_SEND_MESSAGE_TEMPLATE,
-                                        pMessageType, MAX_SIGNALING_CLIENT_ID_LEN, peerClientId, encodedMessage, encodedIceConfig);
-    } else {
-        writtenSize = (UINT32) SNPRINTF((PCHAR) (pSignalingClient->pOngoingCallInfo->sendBuffer + LWS_PRE), size,
-                                        SIGNALING_SEND_MESSAGE_TEMPLATE_WITH_CORRELATION_ID, pMessageType, MAX_SIGNALING_CLIENT_ID_LEN, peerClientId,
-                                        encodedMessage, correlationLen, pCorrelationId, encodedIceConfig);
-    }
+    bufferSize = SIZEOF(pSignalingClient->pOngoingCallInfo->sendBuffer) - LWS_PRE - 1; /* -1 for null terminator. */
+    retSignal = Signal_constructWssMessage( &wssSendMessage, pSignalingClient->pOngoingCallInfo->sendBuffer + LWS_PRE, &bufferSize );
+    CHK(retSignal == SIGNAL_RESULT_OK, retSignal);
 
     // Validate against max
-    CHK(writtenSize <= LWS_MESSAGE_BUFFER_SIZE, STATUS_SIGNALING_MAX_MESSAGE_LEN_AFTER_ENCODING);
+    CHK(bufferSize + LWS_PRE <= LWS_MESSAGE_BUFFER_SIZE, STATUS_SIGNALING_MAX_MESSAGE_LEN_AFTER_ENCODING);
 
-    writtenSize *= SIZEOF(CHAR);
+    // Set null terminator to make sure sendBuffer is a valid string.
+    *(pSignalingClient->pOngoingCallInfo->sendBuffer + LWS_PRE + bufferSize) = '\0';
+
+    writtenSize = bufferSize * SIZEOF(CHAR);
     CHK(writtenSize <= size, STATUS_INVALID_ARG);
 
     // Store the data pointer
@@ -1826,7 +1813,7 @@ STATUS sendLwsMessage(PSignalingClient pSignalingClient, SIGNALING_MESSAGE_TYPE 
     // Send the data to the web socket
     awaitForResponse = (correlationLen != 0) && BLOCK_ON_CORRELATION_ID;
 
-    DLOGD("Sending data over web socket: Message type: %s, RecepientId: %s", pMessageType, peerClientId);
+    DLOGD("Sending data over web socket:\n%s", pSignalingClient->pOngoingCallInfo->sendBuffer + LWS_PRE);
 
     CHK_STATUS(writeLwsData(pSignalingClient, awaitForResponse));
 

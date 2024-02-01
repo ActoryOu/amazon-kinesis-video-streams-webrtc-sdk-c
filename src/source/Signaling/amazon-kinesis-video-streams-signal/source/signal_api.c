@@ -14,6 +14,145 @@
 #define AWS_STRING_QUOTE_WEBRTC "\"WEBRTC\""
 #define AWS_STRING_LENGTH_QUOTE_WEBRTC ( 8 )
 
+#define AWS_STRING_SDP_OFFER "SDP_OFFER"
+#define AWS_STRING_SDP_ANSWER "SDP_ANSWER"
+#define AWS_STRING_SDP_ICE_CANDIDATE "ICE_CANDIDATE"
+
+static char * getStringFromMessageType( SignalMessageType_t messageType )
+{
+    char * ret;
+
+    switch(messageType) {
+        case SIGNAL_MESSAGE_TYPE_SDP_OFFER:
+            ret = AWS_STRING_SDP_OFFER;
+            break;
+        case SIGNAL_MESSAGE_TYPE_SDP_ANSWER:
+            ret = AWS_STRING_SDP_ANSWER;
+            break;
+        case SIGNAL_MESSAGE_TYPE_ICE_CANDIDATE:
+            ret = AWS_STRING_SDP_ICE_CANDIDATE;
+            break;
+        default:
+            ret = SIGNAL_STRING_UNKNOWN;
+            break;
+    }
+
+    return ret;
+}
+
+static SignalResult_t appendIceServerList( char *pBuffer, int *pBufferLength, SignalIceConfigMessage_t * pIceServerList )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length = 0, i, j;
+    char * pCurrentWrite = pBuffer;
+    size_t remainingLength = *pBufferLength;
+
+    /* pBuffer, pBufferLength, and pIceServerList are guaranteed before calling. */
+    if (pIceServerList->iceServerNum > AWS_ICE_SERVER_MAX_NUM) {
+        result = SIGNAL_RESULT_INVALID_ICE_SERVER_COUNT;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        /* Append ice server configs. */
+        for (i = 0; i < pIceServerList->iceServerNum; i++) {
+            if (pIceServerList->iceServer[i].urisNum > AWS_ICE_SERVER_MAX_URIS) {
+                result = SIGNAL_RESULT_INVALID_ICE_SERVER_URIS_COUNT;
+                break;
+            }
+
+            /* Start appending ICE server config prefix, including password, ttl */
+            if (i == 0) {
+                length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_ICE_SERVER_TEMPLATE_PREFIX,
+                                  (int) pIceServerList->iceServer[i].passwordLength, pIceServerList->iceServer[i].pPassword,
+                                  pIceServerList->iceServer[i].messageTtlSeconds);
+            } else {
+                length = snprintf(pCurrentWrite, remainingLength, "," AWS_SIGNALING_ICE_SERVER_TEMPLATE_PREFIX,
+                                  (int) pIceServerList->iceServer[i].passwordLength, pIceServerList->iceServer[i].pPassword,
+                                  pIceServerList->iceServer[i].messageTtlSeconds);
+            }
+
+            if (length < 0) { //LCOV_EXCL_BR_LINE
+                result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+                break;
+            }
+            else if (length >= remainingLength) {
+                result = SIGNAL_RESULT_OUT_OF_MEMORY;
+                break;
+            }
+            else {
+                remainingLength -= length;
+                pCurrentWrite += length;
+            }
+
+            /* Append URIs. */
+            for (j = 0; j < pIceServerList->iceServer[i].urisNum; j++) {
+                if (j == 0) {
+                    length = snprintf(pCurrentWrite, remainingLength, "\n\t\t\t\t\"%.*s\"",
+                                      (int) pIceServerList->iceServer[i].urisLength[j], pIceServerList->iceServer[i].pUris[j]);
+                } else {
+                    length = snprintf(pCurrentWrite, remainingLength, ",\n\t\t\t\t\"%.*s\"",
+                                      (int) pIceServerList->iceServer[i].urisLength[j], pIceServerList->iceServer[i].pUris[j]);
+                }
+
+                if (length < 0) { //LCOV_EXCL_BR_LINE
+                    result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+                    break;
+                }
+                else if (length >= remainingLength) {
+                    result = SIGNAL_RESULT_OUT_OF_MEMORY;
+                    break;
+                }
+                else {
+                    remainingLength -= length;
+                    pCurrentWrite += length;
+                }
+            }
+
+            if (result != SIGNAL_RESULT_OK) {
+                break;
+            }
+            
+            /* Append user name. */
+            length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_ICE_SERVER_TEMPLATE_POSTFIX,
+                              (int) pIceServerList->iceServer[i].userNameLength, pIceServerList->iceServer[i].pUserName);
+
+            if (length < 0) { //LCOV_EXCL_BR_LINE
+                result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+                break;
+            }
+            else if (length >= remainingLength) {
+                result = SIGNAL_RESULT_OUT_OF_MEMORY;
+                break;
+            }
+            else {
+                remainingLength -= length;
+                pCurrentWrite += length;
+            }
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= remainingLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            remainingLength -= length;
+            pCurrentWrite += length;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK ) {
+        *pBufferLength = *pBufferLength - remainingLength;
+    }
+
+    return result;
+}
+
 static SignalChannelEndpointProtocol_t getProtocolFromString( const char *pProtocolString, size_t protocolStringLength )
 {
     SignalChannelEndpointProtocol_t ret = SIGNAL_ENDPOINT_PROTOCOL_NONE;
@@ -1084,6 +1223,85 @@ SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char 
      * Reserve body parameters for future use. */
     (void) pBody;
     (void) pBodyLength;
+
+    return result;
+}
+
+SignalResult_t Signal_constructWssMessage( SignalWssSendMessage_t * pWssSendMessage, char * pBuffer, size_t * pBufferLength )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    int length=0;
+    char * pCurrentWrite = pBuffer;
+    size_t remainingLength = *pBufferLength;
+
+    /* input check */
+    if (pWssSendMessage == NULL || pBuffer == NULL ||
+        pWssSendMessage->pBase64EncodedMessage == NULL ||
+        pWssSendMessage->pRecipientClientId == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_PREFIX,
+                          getStringFromMessageType(pWssSendMessage->messageType),
+                          (int) pWssSendMessage->recipientClientIdLength, pWssSendMessage->pRecipientClientId,
+                          (int) pWssSendMessage->base64EncodedMessageLength, pWssSendMessage->pBase64EncodedMessage);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= remainingLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            remainingLength -= length;
+            pCurrentWrite += length;
+        }
+    }
+
+    /* Append correlation ID. */
+    if (result == SIGNAL_RESULT_OK && pWssSendMessage->correlationIdLength > 0) {
+        length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_CORRELATION_ID,
+                          (int) pWssSendMessage->correlationIdLength, pWssSendMessage->pCorrelationId);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= remainingLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            remainingLength -= length;
+            pCurrentWrite += length;
+        }
+    }
+
+    /* Append ice server list if it's SDP_OFFER. */
+    if (result == SIGNAL_RESULT_OK && pWssSendMessage->messageType == SIGNAL_MESSAGE_TYPE_SDP_OFFER &&
+        pWssSendMessage->pIceServerList != NULL && pWssSendMessage->pIceServerList->iceServerNum > 0) {
+        length = remainingLength;
+        result = appendIceServerList(pCurrentWrite, &length, pWssSendMessage->pIceServerList);
+    }
+
+    /* Append send message postfix. */
+    if (result == SIGNAL_RESULT_OK ) {
+        length = snprintf(pCurrentWrite, remainingLength, AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_POSTFIX);
+
+        if (length < 0) { //LCOV_EXCL_BR_LINE
+            result = SIGNAL_RESULT_SNPRINTF_ERROR; // LCOV_EXCL_LINE
+        }
+        else if (length >= remainingLength) {
+            result = SIGNAL_RESULT_OUT_OF_MEMORY;
+        }
+        else {
+            remainingLength -= length;
+            pCurrentWrite += length;
+        }
+    }
+    
+    if (result == SIGNAL_RESULT_OK ) {
+        *pBufferLength = *pBufferLength - remainingLength;
+    }
 
     return result;
 }

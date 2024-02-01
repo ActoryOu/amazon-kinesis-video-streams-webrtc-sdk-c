@@ -93,6 +93,40 @@
     "{\n\t\"ChannelARN\": \"%.*s\","                                                                                                                   \
     "\n\t\"CurrentVersion\": \"%.*s\"\n}"
 
+// Send message JSON template
+#define AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_PREFIX                                                                                                              \
+    "{\n"                                                                                                                                            \
+    "\t\"action\": \"%s\",\n"                                                                                                                        \
+    "\t\"RecipientClientId\": \"%.*s\",\n"                                                                                                           \
+    "\t\"MessagePayload\": \"%.*s\""
+
+// Correlation id template if it's set.
+#define AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_CORRELATION_ID                                                                                          \
+    ",\n"                                                                                                                \
+    "\t\"CorrelationId\": \"%.*s\""
+
+#define AWS_SIGNALING_ICE_SERVER_LIST_TEMPLATE_PREFIX                                                                                                     \
+    ",\n"                                                                                                                                            \
+    "\t\"IceServerList\": ["
+
+#define AWS_SIGNALING_ICE_SERVER_LIST_TEMPLATE_POSTFIX "\n\t]"
+
+#define AWS_SIGNALING_ICE_SERVER_TEMPLATE_PREFIX                                                                                                                \
+    "\n"                                                                                                                                             \
+    "\t\t{\n"                                                                                                                                        \
+    "\t\t\t\"Password\": \"%.*s\",\n"                                                                                                                  \
+    "\t\t\t\"Ttl\": %u,\n"                                                                                                                  \
+    "\t\t\t\"Uris\": ["
+
+#define AWS_SIGNALING_ICE_SERVER_TEMPLATE_POSTFIX                                                                                                                \
+    "\n\t\t\t],\n"                                                                                                                        \
+    "\t\t\t\"Username\": \"%.*s\"\n"                                                                                                                   \
+    "\t\t}"
+
+// Ending curly bracket
+#define AWS_SIGNALING_SEND_MESSAGE_TEMPLATE_POSTFIX                                                                                          \
+    "\n}"
+
 // Parameter names for Connect Websocket Secure Endpoint
 #define AWS_SIGNALING_ROLE_PARAM_NAME         "X-Amz-Role"
 #define AWS_SIGNALING_CHANNEL_NAME_PARAM_NAME "X-Amz-ChannelName"
@@ -112,7 +146,7 @@
 #define AWS_MAX_CHANNEL_NAME_LEN ( 256 )
 
 #define AWS_ICE_SERVER_MAX_NUM ( 5 )
-#define AWS_ICE_SERVER_MAX_URIS ( 5 )
+#define AWS_ICE_SERVER_MAX_URIS ( 4 )
 
 #define AWS_MESSAGE_CHANNEL_TTL_SECONDS_BUFFER_MAX ( 5 )
 #define AWS_MESSAGE_CHANNEL_TTL_SECONDS_MIN ( 5 )
@@ -135,6 +169,8 @@ typedef enum SignalResult
     SIGNAL_RESULT_INVALID_ENDPOINT,
     SIGNAL_RESULT_INVALID_CHANNEL_NAME,
     SIGNAL_RESULT_INVALID_CHANNEL_TYPE,
+    SIGNAL_RESULT_INVALID_ICE_SERVER_COUNT,
+    SIGNAL_RESULT_INVALID_ICE_SERVER_URIS_COUNT,
     SIGNAL_RESULT_PARSE_NEXT_LAYER,
 } SignalResult_t;
 
@@ -161,6 +197,14 @@ typedef enum SignalRole
     SIGNAL_ROLE_MASTER,
     SIGNAL_ROLE_VIEWER,
 } SignalRole_t;
+
+typedef enum SignalMessageType
+{
+    SIGNAL_MESSAGE_TYPE_NONE = 0,
+    SIGNAL_MESSAGE_TYPE_SDP_OFFER,
+    SIGNAL_MESSAGE_TYPE_SDP_ANSWER,
+    SIGNAL_MESSAGE_TYPE_ICE_CANDIDATE,
+} SignalMessageType_t;
 
 typedef struct SignalChannelInfo
 {
@@ -323,6 +367,18 @@ typedef struct SignalConnectWssEndpointRequest
     char * pClientId;
     size_t clientIdLength;
 } SignalConnectWssEndpointRequest_t;
+
+typedef struct SignalWssSendMessage
+{
+    SignalMessageType_t messageType;
+    char * pRecipientClientId;
+    size_t recipientClientIdLength;
+    const char * pBase64EncodedMessage;
+    size_t base64EncodedMessageLength;
+    char * pCorrelationId;
+    size_t correlationIdLength;
+    SignalIceConfigMessage_t * pIceServerList;
+} SignalWssSendMessage_t;
 
 /*-----------------------------------------------------------*/
 

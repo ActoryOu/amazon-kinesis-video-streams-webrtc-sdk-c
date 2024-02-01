@@ -34,6 +34,8 @@ SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUr
 
 SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalConnectWssEndpointRequest_t * pConnectWssEndpointRequest );
 
+SignalResult_t Signal_constructWssMessage( SignalWssSendMessage_t * pWssSendMessage, char * pBuffer, size_t * pBufferLength );
+
 /*-----------------------------------------------------------*/
 
 #endif /* SIGNAL_API_H */
