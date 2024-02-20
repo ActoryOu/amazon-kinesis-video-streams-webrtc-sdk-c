@@ -190,6 +190,109 @@ static void updateUris(SignalIceServer_t *pIceServer, const char * pUris, size_t
     }
 }
 
+static SignalResult_t parseIceServerList(const char *pIceServerListBuffer, size_t iceServerListBufferLength, SignalIceConfigMessage_t *pIceConfigMessage)
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    JSONStatus_t jsonResult = JSONSuccess;
+    size_t start = 0, next = 0;
+    JSONPair_t pair = { 0 };
+    const char *pIceSingleServerBuffer;
+    size_t iceSingleServerBufferLength;
+    size_t iceSingleServerStart = 0, iceSingleServerNext = 0;
+    char ttlSecondsBuffer[AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX] = { 0 };
+
+    /* Input check. */
+    if (pIceServerListBuffer == NULL || pIceConfigMessage == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    while (result == SIGNAL_RESULT_OK && pIceConfigMessage->iceServerNum < AWS_ICE_SERVER_MAX_NUM) {
+        jsonResult = JSON_Iterate( pIceServerListBuffer, iceServerListBufferLength, &start, &next, &pair );
+
+        if (jsonResult == JSONSuccess) {
+            pIceSingleServerBuffer = pair.value;
+            iceSingleServerBufferLength = pair.valueLength;
+            iceSingleServerStart = 0;
+            iceSingleServerNext = 0;
+
+            jsonResult = JSON_Iterate( pIceSingleServerBuffer, iceSingleServerBufferLength, &iceSingleServerStart, &iceSingleServerNext, &pair );
+            while (jsonResult == JSONSuccess) {
+                if (strncmp(pair.key, "Password", pair.keyLength) == 0) {
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword != NULL) {
+                        pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
+                    }
+                    
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword = pair.value;
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].passwordLength = pair.valueLength;
+                } else if (strncmp(pair.key, "Ttl", pair.keyLength) == 0) {
+                    if( pair.valueLength >= AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX ) {
+                        /* Unexpect TTL value from cloud. */
+                        result = SIGNAL_RESULT_INVALID_TTL;
+                        break;
+                    }
+
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds != 0) {
+                        pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
+                    }
+
+                    strncpy(ttlSecondsBuffer, pair.value, pair.valueLength);
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds = (uint32_t) strtoul(ttlSecondsBuffer, NULL, 10);
+
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds < AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MIN ||
+                        pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds > AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MAX) {
+                        /* Unexpect TTL value from cloud. */
+                        result = SIGNAL_RESULT_INVALID_TTL;
+                    }
+                } else if (strncmp(pair.key, "Uris", pair.keyLength) == 0) {
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUris[0] != NULL) {
+                        pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
+                    }
+                    
+                    updateUris(&pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum], pair.value, pair.valueLength);
+                } else if (strncmp(pair.key, "Username", pair.keyLength) == 0) {
+                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName != NULL) {
+                        pIceConfigMessage->iceServerNum++;
+
+                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
+                            /* Ignore following servers. */
+                            break;
+                        }
+                    }
+                    
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName = pair.value;
+                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].userNameLength = pair.valueLength;
+                } else {
+                    /* Skip unknown messages. */
+                }
+
+                jsonResult = JSON_Iterate( pIceSingleServerBuffer, iceSingleServerBufferLength, &iceSingleServerStart, &iceSingleServerNext, &pair );
+            }
+
+        } else {
+            /* All parsed. */
+            pIceConfigMessage->iceServerNum++;
+            break;
+        }
+    }
+
+    return result;
+}
+
 SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCreate )
 {
     SignalResult_t result = SIGNAL_RESULT_OK;
@@ -321,7 +424,7 @@ SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char *
         if (jsonResult == JSONSuccess) {
             if (pair.jsonType != JSONObject || 
                 pair.keyLength != strlen("ChannelInfo") || 
-                strncmp(pair.key, "ChannelInfo", pair.keyLength)) {
+                strncmp(pair.key, "ChannelInfo", pair.keyLength) != 0) {
                 /* Not an ice server list meesage. */
                 result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
@@ -492,7 +595,7 @@ SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, cha
         if (jsonResult == JSONSuccess) {
             if (pair.jsonType != JSONArray || 
                 pair.keyLength != strlen("MediaStorageConfiguration") || 
-                strncmp(pair.key, "MediaStorageConfiguration", pair.keyLength)) {
+                strncmp(pair.key, "MediaStorageConfiguration", pair.keyLength) != 0) {
                 /* Not an ice server list meesage. */
                 result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
@@ -831,7 +934,7 @@ SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char *
         if (jsonResult == JSONSuccess) {
             if (pair.jsonType != JSONArray || 
                 pair.keyLength != strlen("ResourceEndpointList") || 
-                strncmp(pair.key, "ResourceEndpointList", pair.keyLength)) {
+                strncmp(pair.key, "ResourceEndpointList", pair.keyLength) != 0) {
                 /* Not an ice server list meesage. */
                 result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
@@ -949,11 +1052,6 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
     JSONPair_t pair = { 0 };
     const char *pIceServerListBuffer;
     size_t iceServerListBufferLength;
-    size_t iceServerListStart = 0, iceServerListNext = 0;
-    const char *pIceSingleServerBuffer;
-    size_t iceSingleServerBufferLength;
-    size_t iceSingleServerStart = 0, iceSingleServerNext = 0;
-    char ttlSecondsBuffer[AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX] = { 0 };
 
     /* input check */
     if (pCtx == NULL || pMessage == NULL || pIceConfigMessage == NULL) {
@@ -977,7 +1075,7 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
         if (jsonResult == JSONSuccess) {
             if (pair.jsonType != JSONArray || 
                 pair.keyLength != strlen("IceServerList") || 
-                strncmp(pair.key, "IceServerList", pair.keyLength)) {
+                strncmp(pair.key, "IceServerList", pair.keyLength) != 0) {
                 /* Not an ice server list meesage. */
                 result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
             } else {
@@ -989,89 +1087,8 @@ SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMess
         }
     }
 
-    while (result == SIGNAL_RESULT_OK && pIceConfigMessage->iceServerNum < AWS_ICE_SERVER_MAX_NUM) {
-        jsonResult = JSON_Iterate( pIceServerListBuffer, iceServerListBufferLength, &iceServerListStart, &iceServerListNext, &pair );
-
-        if (jsonResult == JSONSuccess) {
-            pIceSingleServerBuffer = pair.value;
-            iceSingleServerBufferLength = pair.valueLength;
-            iceSingleServerStart = 0;
-            iceSingleServerNext = 0;
-
-            jsonResult = JSON_Iterate( pIceSingleServerBuffer, iceSingleServerBufferLength, &iceSingleServerStart, &iceSingleServerNext, &pair );
-            while (jsonResult == JSONSuccess) {
-
-                if (strncmp(pair.key, "Password", pair.keyLength) == 0) {
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword != NULL) {
-                        pIceConfigMessage->iceServerNum++;
-
-                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
-                            /* Ignore following servers. */
-                            break;
-                        }
-                    }
-                    
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pPassword = pair.value;
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].passwordLength = pair.valueLength;
-                } else if (strncmp(pair.key, "Ttl", pair.keyLength) == 0) {
-                    if( pair.valueLength >= AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_BUFFER_MAX ) {
-                        /* Unexpect TTL value from cloud. */
-                        result = SIGNAL_RESULT_INVALID_TTL;
-                        break;
-                    }
-
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds != 0) {
-                        pIceConfigMessage->iceServerNum++;
-
-                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
-                            /* Ignore following servers. */
-                            break;
-                        }
-                    }
-
-                    strncpy(ttlSecondsBuffer, pair.value, pair.valueLength);
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds = (uint32_t) strtoul(ttlSecondsBuffer, NULL, 10);
-
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds < AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MIN ||
-                        pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].messageTtlSeconds > AWS_MESSAGE_ICE_SERVER_TTL_SECONDS_MAX) {
-                        /* Unexpect TTL value from cloud. */
-                        result = SIGNAL_RESULT_INVALID_TTL;
-                    }
-                } else if (strncmp(pair.key, "Uris", pair.keyLength) == 0) {
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUris[0] != NULL) {
-                        pIceConfigMessage->iceServerNum++;
-
-                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
-                            /* Ignore following servers. */
-                            break;
-                        }
-                    }
-                    
-                    updateUris(&pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum], pair.value, pair.valueLength);
-                } else if (strncmp(pair.key, "Username", pair.keyLength) == 0) {
-                    if (pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName != NULL) {
-                        pIceConfigMessage->iceServerNum++;
-
-                        if (pIceConfigMessage->iceServerNum >= AWS_ICE_SERVER_MAX_NUM) {
-                            /* Ignore following servers. */
-                            break;
-                        }
-                    }
-                    
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].pUserName = pair.value;
-                    pIceConfigMessage->iceServer[pIceConfigMessage->iceServerNum].userNameLength = pair.valueLength;
-                } else {
-                    /* Skip unknown messages. */
-                }
-
-                jsonResult = JSON_Iterate( pIceSingleServerBuffer, iceSingleServerBufferLength, &iceSingleServerStart, &iceSingleServerNext, &pair );
-            }
-
-        } else {
-            /* All parsed. */
-            pIceConfigMessage->iceServerNum++;
-            break;
-        }
+    if (result == SIGNAL_RESULT_OK) {
+        result = parseIceServerList(pIceServerListBuffer, iceServerListBufferLength, pIceConfigMessage);
     }
 
     return result;
@@ -1301,6 +1318,119 @@ SignalResult_t Signal_constructWssMessage( SignalWssSendMessage_t * pWssSendMess
     
     if (result == SIGNAL_RESULT_OK ) {
         *pBufferLength = *pBufferLength - remainingLength;
+    }
+
+    return result;
+}
+
+SignalResult_t Signal_parseWssRecvMessage( char * pMessage, size_t messageLength, SignalWssRecvMessage_t * pWssRecvMessage )
+{
+    SignalResult_t result = SIGNAL_RESULT_OK;
+    JSONStatus_t jsonResult;
+    size_t start = 0, next = 0;
+    JSONPair_t pair = { 0 };
+    const char *pStatusResponseBuffer = NULL;
+    size_t statusResponseBufferLength = 0;
+    size_t statusResponseStart = 0, statusResponseNext = 0;
+
+    /* input check */
+    if (pMessage == NULL || pWssRecvMessage == NULL) {
+        result = SIGNAL_RESULT_BAD_PARAM;
+    }
+
+    // Exclude '\0' in messageLength.
+    if (pMessage[messageLength-1] == '\0') {
+        messageLength--;
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        jsonResult = JSON_Validate(pMessage, messageLength);
+
+        if (jsonResult != JSONSuccess) {
+            result = SIGNAL_RESULT_INVALID_JSON;
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK) {
+        memset(pWssRecvMessage, 0, sizeof(SignalWssRecvMessage_t));
+
+        jsonResult = JSON_Iterate( pMessage, messageLength, &start, &next, &pair );
+
+        while (jsonResult == JSONSuccess) {
+            if (strncmp(pair.key, "senderClientId", pair.keyLength) == 0) {
+                pWssRecvMessage->pSenderClientId = pair.value;
+                pWssRecvMessage->senderClientIdLength = pair.valueLength;
+            } else if (strncmp(pair.key, "messageType", pair.keyLength) == 0) {
+                if (strncmp(pair.value, "SDP_OFFER", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_SDP_OFFER;
+                } else if (strncmp(pair.value, "SDP_ANSWER", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_SDP_ANSWER;
+                } else if (strncmp(pair.value, "ICE_CANDIDATE", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_ICE_CANDIDATE;
+                } else if (strncmp(pair.value, "GO_AWAY", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_GO_AWAY;
+                } else if (strncmp(pair.value, "RECONNECT_ICE_SERVER", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_RECONNECT_ICE_SERVER;
+                } else if (strncmp(pair.value, "STATUS_RESPONSE", pair.valueLength) == 0) {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_STATUS_RESPONSE;
+                } else {
+                    pWssRecvMessage->messageType = SIGNAL_MESSAGE_TYPE_UNKNOWN;
+                }
+            } else if (strncmp(pair.key, "messagePayload", pair.keyLength) == 0) {
+                pWssRecvMessage->pBase64EncodedPayload = pair.value;
+                pWssRecvMessage->base64EncodedPayloadLength = pair.valueLength;
+            } else if (strncmp(pair.key, "statusResponse", pair.keyLength) == 0) {
+                if (pair.jsonType == JSONObject) {
+                    pStatusResponseBuffer = pair.value;
+                    statusResponseBufferLength = pair.valueLength;
+                    statusResponseStart = 0;
+                    statusResponseNext = 0;
+                } else {
+                    result = SIGNAL_RESULT_NOT_EXPECT_RESPONSE;
+                    break;
+                }
+            } else if (pair.jsonType == JSONArray &&
+                       pair.keyLength == strlen("IceServerList") &&
+                       strncmp(pair.key, "IceServerList", pair.keyLength) == 0) {
+                result = parseIceServerList(pair.value, pair.valueLength, &pWssRecvMessage->iceServerList);
+
+                if (result != SIGNAL_RESULT_OK) {
+                    break;
+                }
+            } else {
+                /* Do nothing, ignore unknown tags. */
+            }
+            
+            jsonResult = JSON_Iterate( pMessage, messageLength, &start, &next, &pair );
+        }
+    }
+
+    if (result == SIGNAL_RESULT_OK && pStatusResponseBuffer != NULL) {
+        jsonResult = JSON_Iterate( pStatusResponseBuffer, statusResponseBufferLength, &statusResponseStart, &statusResponseNext, &pair );
+
+        if (jsonResult != JSONSuccess) {
+            result = SIGNAL_RESULT_INVALID_STATUS_RESPONSE;
+        }
+
+        while (jsonResult == JSONSuccess) {
+            if (strncmp(pair.key, "correlationId", pair.keyLength) == 0) {
+                pWssRecvMessage->statusResponse.pCorrelationId = pair.value;
+                pWssRecvMessage->statusResponse.correlationIdLength = pair.valueLength;
+            } else if (strncmp(pair.key, "errorType", pair.keyLength) == 0) {
+                pWssRecvMessage->statusResponse.pErrorType = pair.value;
+                pWssRecvMessage->statusResponse.errorTypeLength = pair.valueLength;
+            } else if (strncmp(pair.key, "statusCode", pair.keyLength) == 0) {
+                pWssRecvMessage->statusResponse.pStatusCode = pair.value;
+                pWssRecvMessage->statusResponse.statusCodeLength = pair.valueLength;
+            } else if (strncmp(pair.key, "description", pair.keyLength) == 0) {
+                pWssRecvMessage->statusResponse.pDescription = pair.value;
+                pWssRecvMessage->statusResponse.descriptionLength = pair.valueLength;
+            } else {
+                /* Do nothing, ignore unknown tags. */
+            }
+
+            jsonResult = JSON_Iterate( pStatusResponseBuffer, statusResponseBufferLength, &statusResponseStart, &statusResponseNext, &pair );
+        }
     }
 
     return result;

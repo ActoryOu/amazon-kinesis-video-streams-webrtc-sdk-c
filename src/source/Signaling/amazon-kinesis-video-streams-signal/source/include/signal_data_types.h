@@ -171,6 +171,7 @@ typedef enum SignalResult
     SIGNAL_RESULT_INVALID_CHANNEL_TYPE,
     SIGNAL_RESULT_INVALID_ICE_SERVER_COUNT,
     SIGNAL_RESULT_INVALID_ICE_SERVER_URIS_COUNT,
+    SIGNAL_RESULT_INVALID_STATUS_RESPONSE,
     SIGNAL_RESULT_PARSE_NEXT_LAYER,
 } SignalResult_t;
 
@@ -200,10 +201,13 @@ typedef enum SignalRole
 
 typedef enum SignalMessageType
 {
-    SIGNAL_MESSAGE_TYPE_NONE = 0,
+    SIGNAL_MESSAGE_TYPE_UNKNOWN = 0,
     SIGNAL_MESSAGE_TYPE_SDP_OFFER,
     SIGNAL_MESSAGE_TYPE_SDP_ANSWER,
     SIGNAL_MESSAGE_TYPE_ICE_CANDIDATE,
+    SIGNAL_MESSAGE_TYPE_GO_AWAY,
+    SIGNAL_MESSAGE_TYPE_RECONNECT_ICE_SERVER,
+    SIGNAL_MESSAGE_TYPE_STATUS_RESPONSE,
 } SignalMessageType_t;
 
 typedef struct SignalChannelInfo
@@ -371,14 +375,39 @@ typedef struct SignalConnectWssEndpointRequest
 typedef struct SignalWssSendMessage
 {
     SignalMessageType_t messageType;
-    char * pRecipientClientId;
+    const char * pRecipientClientId;
     size_t recipientClientIdLength;
     const char * pBase64EncodedMessage;
     size_t base64EncodedMessageLength;
-    char * pCorrelationId;
+    const char * pCorrelationId;
     size_t correlationIdLength;
     SignalIceConfigMessage_t * pIceServerList;
 } SignalWssSendMessage_t;
+
+/* Follow https://docs.aws.amazon.com/kinesisvideostreams-webrtc-dg/latest/devguide/kvswebrtc-websocket-apis-7.html
+ * in structures SignalWssStatusResponse_t and SignalWssRecvMessage_t. */
+typedef struct SignalWssStatusResponse
+{
+    const char * pCorrelationId;
+    size_t correlationIdLength;
+    const char * pErrorType;
+    size_t errorTypeLength;
+    const char * pStatusCode;
+    size_t statusCodeLength;
+    const char * pDescription;
+    size_t descriptionLength;
+} SignalWssStatusResponse_t;
+
+typedef struct SignalWssRecvMessages
+{
+    const char * pSenderClientId;
+    size_t senderClientIdLength;
+    SignalMessageType_t messageType;
+    const char * pBase64EncodedPayload;
+    size_t base64EncodedPayloadLength;
+    SignalWssStatusResponse_t statusResponse;
+    SignalIceConfigMessage_t iceServerList;
+} SignalWssRecvMessage_t;
 
 /*-----------------------------------------------------------*/
 

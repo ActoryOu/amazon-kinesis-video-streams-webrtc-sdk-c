@@ -36,6 +36,8 @@ SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char 
 
 SignalResult_t Signal_constructWssMessage( SignalWssSendMessage_t * pWssSendMessage, char * pBuffer, size_t * pBufferLength );
 
+SignalResult_t Signal_parseWssRecvMessage( char * pMessage, size_t messageLength, SignalWssRecvMessage_t * pWssRecvMessage );
+
 /*-----------------------------------------------------------*/
 
 #endif /* SIGNAL_API_H */
