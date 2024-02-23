@@ -226,16 +226,6 @@ typedef struct SignalChannelInfo
     uint32_t messageTtlSeconds;
 } SignalChannelInfo_t;
 
-typedef struct SignalEndpoints
-{
-    const char * pEndpointWebsocketSecure;
-    size_t endpointWebsocketSecureLength;
-    const char * pEndpointHttps;
-    size_t endpointHttpsLength;
-    const char * pEndpointWebrtc;
-    size_t endpointWebrtcLength;
-} SignalEndpoints_t;
-
 typedef struct SignalContext
 {
     char region[AWS_REGION_MAX_LENGTH];
@@ -245,6 +235,14 @@ typedef struct SignalContext
     char channelName[AWS_MAX_CHANNEL_NAME_LEN];
     size_t channelNameLength;
 } SignalContext_t;
+
+typedef struct SignalRequest
+{
+    char *pUrl;
+    size_t urlLength;
+    char *pBody;
+    size_t bodyLength;
+} SignalRequest_t;
 
 /**
  * Tag declaration
@@ -263,19 +261,22 @@ typedef struct SignalCreate {
     size_t controlPlaneUrlLength;
 } SignalCreate_t;
 
-typedef struct SignalDescribeChannelRequest
-{
-    char * pChannelName;
-    size_t channelNameLength;
-} SignalDescribeChannelRequest_t;
-
 typedef struct SignalCreateChannel {
     SignalChannelInfo_t channelInfo;
     SignalTag_t * pTags;
     size_t tagsCount;
 } SignalCreateChannel_t;
 
-typedef struct SignalDescribeChannel
+typedef SignalCreateChannel_t SignalCreateSignalingChannelRequest_t;
+typedef SignalCreateChannel_t SignalCreateSignalingChannelResponse_t;
+
+typedef struct SignalDescribeSignalingChannelRequest
+{
+    char * pChannelName;
+    size_t channelNameLength;
+} SignalDescribeSignalingChannelRequest_t;
+
+typedef struct SignalDescribeSignalingChannelResponse
 {
     const char * pChannelArn;
     size_t channelArnLength;
@@ -290,21 +291,21 @@ typedef struct SignalDescribeChannel
     const char * pCreationTime;
     size_t creationTimeLength;
     uint32_t messageTtlSeconds;
-} SignalDescribeChannel_t;
+} SignalDescribeSignalingChannelResponse_t;
 
-typedef struct SignalMediaStorageConfigRequest
+typedef struct SignalDescribeMediaStorageConfigRequest
 {
     char * pChannelArn;
     size_t channelArnLength;
-} SignalMediaStorageConfigRequest_t;
+} SignalDescribeMediaStorageConfigRequest_t;
 
-typedef struct SignalMediaStorageConfig
+typedef struct SignalDescribeMediaStorageConfigResponse
 {
     const char * pStatus;
     size_t statusLength;
     const char * pStreamArn;
     size_t streamArnLength;
-} SignalMediaStorageConfig_t;
+} SignalDescribeMediaStorageConfigResponse_t;
 
 typedef struct SignalIceServer
 {
@@ -318,21 +319,33 @@ typedef struct SignalIceServer
     size_t userNameLength;
 } SignalIceServer_t;
 
-typedef struct SignalIceConfigMessage
+typedef struct SignalIceServerList
 {
     SignalIceServer_t iceServer[AWS_ICE_SERVER_MAX_NUM];
     uint32_t iceServerNum;
-} SignalIceConfigMessage_t;
+} SignalIceServerList_t;
 
-typedef struct SignalGetChannelEndpointRequest
+typedef SignalIceServerList_t SignalGetIceServerConfigResponse_t;
+
+typedef struct SignalGetSignalingChannelEndpointRequest
 {
     char * pChannelArn;
     size_t channelArnLength;
     uint8_t protocolsBitsMap; /* support multiple propocols. */
     SignalRole_t role;
-} SignalGetChannelEndpointRequest_t;
+} SignalGetSignalingChannelEndpointRequest_t;
 
-typedef struct SignalIceConfigRequest
+typedef struct SignalGetSignalingChannelEndpointResponse
+{
+    const char * pEndpointWebsocketSecure;
+    size_t endpointWebsocketSecureLength;
+    const char * pEndpointHttps;
+    size_t endpointHttpsLength;
+    const char * pEndpointWebrtc;
+    size_t endpointWebrtcLength;
+} SignalGetSignalingChannelEndpointResponse_t;
+
+typedef struct SignalGetIceServerConfigRequest
 {
     char * pChannelArn;
     size_t channelArnLength;
@@ -340,7 +353,7 @@ typedef struct SignalIceConfigRequest
     size_t endpointHttpsLength;
     char * pClientId;
     size_t clientIdLength;
-} SignalIceConfigRequest_t;
+} SignalGetIceServerConfigRequest_t;
 
 typedef struct SignalJoinStorageSessionRequest
 {
@@ -353,13 +366,13 @@ typedef struct SignalJoinStorageSessionRequest
     size_t clientIdLength;
 } SignalJoinStorageSessionRequest_t;
 
-typedef struct SignalDeleteChannelRequest
+typedef struct SignalDeleteSignalingChannelRequest
 {
     char * pChannelArn;
     size_t channelArnLength;
     char * pVersion;
     size_t versionLength;
-} SignalDeleteChannelRequest_t;
+} SignalDeleteSignalingChannelRequest_t;
 
 typedef struct SignalConnectWssEndpointRequest
 {
@@ -381,7 +394,7 @@ typedef struct SignalWssSendMessage
     size_t base64EncodedMessageLength;
     const char * pCorrelationId;
     size_t correlationIdLength;
-    SignalIceConfigMessage_t * pIceServerList;
+    SignalIceServerList_t iceServerList;
 } SignalWssSendMessage_t;
 
 /* Follow https://docs.aws.amazon.com/kinesisvideostreams-webrtc-dg/latest/devguide/kvswebrtc-websocket-apis-7.html
@@ -406,7 +419,7 @@ typedef struct SignalWssRecvMessages
     const char * pBase64EncodedPayload;
     size_t base64EncodedPayloadLength;
     SignalWssStatusResponse_t statusResponse;
-    SignalIceConfigMessage_t iceServerList;
+    SignalIceServerList_t iceServerList;
 } SignalWssRecvMessage_t;
 
 /*-----------------------------------------------------------*/

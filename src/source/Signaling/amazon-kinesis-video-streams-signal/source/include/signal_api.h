@@ -8,31 +8,31 @@
 
 SignalResult_t Signal_createSignal( SignalContext_t *pCtx, SignalCreate_t *pCreate );
 
-SignalResult_t Signal_getDescribeChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDescribeChannelRequest_t * pDescribeChannelRequest );
+SignalResult_t Signal_constructDescribeSignalingChannelRequest( SignalContext_t *pCtx, SignalDescribeSignalingChannelRequest_t * pDescribeSignalingChannelRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_parseDescribeChannelMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalDescribeChannel_t *pDescribeChannel );
+SignalResult_t Signal_parseDescribeSignalingChannelResponse( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalDescribeSignalingChannelResponse_t *pDescribeSignalingChannelResponse );
 
-SignalResult_t Signal_getMediaStorageConfigRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalMediaStorageConfigRequest_t * pMediaStorageConfigRequest );
+SignalResult_t Signal_constructDescribeMediaStorageConfigRequest( SignalContext_t *pCtx, SignalDescribeMediaStorageConfigRequest_t * pDescribeMediaStorageConfigRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_parseMediaStorageConfigMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalMediaStorageConfig_t *pMediaStorageConfig );
+SignalResult_t Signal_parseDescribeMediaStorageConfigResponse( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalDescribeMediaStorageConfigResponse_t *pDescribeMediaStorageConfigResponse );
 
-SignalResult_t Signal_getCreateChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalCreateChannel_t * pCreateChannel );
+SignalResult_t Signal_constructCreateSignalingChannelRequest( SignalContext_t *pCtx, SignalCreateSignalingChannelRequest_t * pCreateSignalingChannelRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_parseCreateChannelMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalCreateChannel_t *pCreateChannel );
+SignalResult_t Signal_parseCreateSignalingChannelResponse( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalCreateSignalingChannelResponse_t *pCreateSignalingChannelResponse );
 
-SignalResult_t Signal_getChannelEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalGetChannelEndpointRequest_t * pChannelEndpointRequest );
+SignalResult_t Signal_constructGetSignalingChannelEndpointRequest( SignalContext_t *pCtx, SignalGetSignalingChannelEndpointRequest_t * pGetSignalingChannelEndpointRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_parseChannelEndpointMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalEndpoints_t * pEndpoints );
+SignalResult_t Signal_parseGetSignalingChannelEndpointResponse( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalGetSignalingChannelEndpointResponse_t * pGetSignalingChannelEndpointResponse );
 
-SignalResult_t Signal_getIceConfig( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalIceConfigRequest_t * pIceConfigReqeust);
+SignalResult_t Signal_constructGetIceServerConfigRequest( SignalContext_t *pCtx, SignalGetIceServerConfigRequest_t * pGetIceServerConfigReqeust, SignalRequest_t *pRequestBuffer);
 
-SignalResult_t Signal_parseIceConfigMessage( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalIceConfigMessage_t *pIceConfigMessage );
+SignalResult_t Signal_parseGetIceServerConfigResponse( SignalContext_t *pCtx, char * pMessage, size_t messageLength, SignalGetIceServerConfigResponse_t *pGetIceConfigResponse );
 
-SignalResult_t Signal_getJoinStorageSessionRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalJoinStorageSessionRequest_t * pJoinStorageSessionRequest );
+SignalResult_t Signal_constuctJoinStorageSessionRequest( SignalContext_t *pCtx, SignalJoinStorageSessionRequest_t * pJoinStorageSessionRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_getDeleteChannelRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalDeleteChannelRequest_t * pDeleteChannelRequest );
+SignalResult_t Signal_constructDeleteSignalingChannelRequest( SignalContext_t *pCtx, SignalDeleteSignalingChannelRequest_t * pDeleteSignalingChannelRequest, SignalRequest_t *pRequestBuffer );
 
-SignalResult_t Signal_getConnectWssEndpointRequest( SignalContext_t *pCtx, char * pUrl, size_t * pUrlLength, char *pBody, size_t * pBodyLength, SignalConnectWssEndpointRequest_t * pConnectWssEndpointRequest );
+SignalResult_t Signal_constructConnectWssEndpointRequest( SignalContext_t *pCtx, SignalConnectWssEndpointRequest_t * pConnectWssEndpointRequest, SignalRequest_t *pRequestBuffer );
 
 SignalResult_t Signal_constructWssMessage( SignalWssSendMessage_t * pWssSendMessage, char * pBuffer, size_t * pBufferLength );
 
