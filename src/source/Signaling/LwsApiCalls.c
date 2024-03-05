@@ -870,12 +870,12 @@ STATUS describeChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     CHK(pSignalingClient->pChannelInfo != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->pChannelInfo->pChannelName != NULL, STATUS_NULL_ARG);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     describeSignalingChannelRequest.channelNameLength = strlen(pSignalingClient->pChannelInfo->pChannelName);
     describeSignalingChannelRequest.pChannelName = pSignalingClient->pChannelInfo->pChannelName;
@@ -988,12 +988,12 @@ STATUS createChannelLws(PSignalingClient pSignalingClient, UINT64 time)
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->pChannelInfo->tagCount <= MAX_TAG_COUNT, STATUS_INVALID_ARG);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     memset(&createSignalingChannelRequest, 0, sizeof(SignalCreateSignalingChannelRequest_t));
     createSignalingChannelRequest.channelInfo.channelNameLength = STRLEN(pSignalingClient->pChannelInfo->pChannelName);
@@ -1089,12 +1089,12 @@ STATUS getChannelEndpointLws(PSignalingClient pSignalingClient, UINT64 time)
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     getSignalingChannelEndpointRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
     getSignalingChannelEndpointRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
@@ -1205,12 +1205,12 @@ STATUS getIceConfigLws(PSignalingClient pSignalingClient, UINT64 time)
     // Update the diagnostics info on the number of ICE refresh calls
     ATOMIC_INCREMENT(&pSignalingClient->diagnostics.iceRefreshCount);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     getIceServerConfigRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
     getIceServerConfigRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
     getIceServerConfigRequest.pEndpointHttps = pSignalingClient->channelEndpointHttps;
@@ -1291,12 +1291,12 @@ STATUS deleteChannelLws(PSignalingClient pSignalingClient, UINT64 time)
         terminateConnectionWithStatus(pSignalingClient, SERVICE_CALL_RESULT_OK);
     }
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     deleteSignalingChannelRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
     deleteSignalingChannelRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
@@ -1419,10 +1419,10 @@ STATUS connectSignalingChannelLws(PSignalingClient pSignalingClient, UINT64 time
     CHK(pSignalingClient->channelEndpointWss[0] != '\0', STATUS_INTERNAL_ERROR);
     CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = NULL;
     signalRequest.bodyLength = 0;
     MEMSET(&connectWssEndpointRequest, 0, sizeof(SignalConnectWssEndpointRequest_t));
@@ -1524,12 +1524,12 @@ STATUS joinStorageSessionLws(PSignalingClient pSignalingClient, UINT64 time)
     CHK(pSignalingClient->channelEndpointWebrtc[0] != '\0', STATUS_INTERNAL_ERROR);
     CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     joinStorageSessionRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
     joinStorageSessionRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
@@ -1613,12 +1613,12 @@ STATUS describeMediaStorageConfLws(PSignalingClient pSignalingClient, UINT64 tim
     CHK(pSignalingClient != NULL, STATUS_NULL_ARG);
     CHK(pSignalingClient->channelDescription.channelArn[0] != '\0', STATUS_INVALID_OPERATION);
 
-    // Prepare URL buffer and reserved 1 space for null terminator
+    // Prepare URL buffer
     signalRequest.pUrl = &url;
-    signalRequest.urlLength = MAX_URI_CHAR_LEN;
-    // Prepare body buffer and reserved 1 space for null terminator
+    signalRequest.urlLength = MAX_URI_CHAR_LEN + 1;
+    // Prepare body buffer
     signalRequest.pBody = &paramsJson;
-    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN - 1;
+    signalRequest.bodyLength = MAX_JSON_PARAMETER_STRING_LEN;
     // Create the API url
     describeMediaStorageConfigRequest.pChannelArn = pSignalingClient->channelDescription.channelArn;
     describeMediaStorageConfigRequest.channelArnLength = strlen(pSignalingClient->channelDescription.channelArn);
