@@ -44,7 +44,7 @@ var searchData=
   ['transceiver_41',['transceiver',['../structKvsRtpTransceiver.html#aa5cc9a66ae2627107369d2869ad502a4',1,'KvsRtpTransceiver']]],
   ['transit_42',['transit',['../structJitterBuffer.html#a2c6f6f876d4522beed2083c424fcfe89',1,'JitterBuffer']]],
   ['transport_43',['transport',['../structIceServer.html#a5122b3bdb2dd16aff1432d3ae1495f23',1,'IceServer']]],
-  ['transportid_44',['transportid',['../structRtcIceCandidateStats.html#a8656c25a5c35a02e85f2a8fc24548144',1,'RtcIceCandidateStats::transportId'],['../structRTCRtpStreamStats.html#ac29873751b74f906f37e927009bccb15',1,'RTCRtpStreamStats::transportId'],['../structRtcDataChannelStats.html#a8def150a423033b6d77697d0a6b32d48',1,'RtcDataChannelStats::transportId'],['../structRtcIceCandidateDiagnostics.html#a0144762e59a95a0f5d29279319d9e757',1,'RtcIceCandidateDiagnostics::transportId']]],
+  ['transportid_44',['transportid',['../structRTCRtpStreamStats.html#ac29873751b74f906f37e927009bccb15',1,'RTCRtpStreamStats::transportId'],['../structRtcDataChannelStats.html#a8def150a423033b6d77697d0a6b32d48',1,'RtcDataChannelStats::transportId']]],
   ['transportstats_45',['transportStats',['../structRtcStatsObject.html#aeda2b94e27f89786810339e7342e0827',1,'RtcStatsObject']]],
   ['transportwidesequencenumber_46',['transportWideSequenceNumber',['../structKvsPeerConnection.html#a301c2256cba3807990c9cc7aa3971dd2',1,'KvsPeerConnection']]],
   ['triggeredcheckqueue_47',['triggeredCheckQueue',['../struct____IceAgent.html#a7de3b11fa51efd391cd3a88668344691',1,'__IceAgent']]],
@@ -59,9 +59,11 @@ var searchData=
   ['turnrealm_56',['turnRealm',['../struct____TurnConnection.html#a64a701ec67a8fca0d10cf705bbac989f',1,'__TurnConnection']]],
   ['turnserver_57',['turnServer',['../struct____TurnConnection.html#ad772725a610141f291e9c4bcde4a7410',1,'__TurnConnection']]],
   ['turnstatefailedfn_58',['turnStateFailedFn',['../structTurnConnectionCallbacks.html#ad7fb2434da0f0c24d73979e2fbc645fc',1,'TurnConnectionCallbacks']]],
-  ['twccextid_59',['twccExtId',['../structKvsPeerConnection.html#ae67d5d26809c5cb022ac12c19523b1de',1,'KvsPeerConnection']]],
-  ['twcclock_60',['twccLock',['../structKvsPeerConnection.html#a88974e9c4a3fde628ee1b203d2a7e0a8',1,'KvsPeerConnection']]],
-  ['twccpacketbyseqnum_61',['twccPacketBySeqNum',['../structTwccManager.html#aad6bb662d75f917083d77fca132a251b',1,'TwccManager']]],
-  ['twccpackets_62',['twccPackets',['../structTwccManager.html#a87afd01f823e933f86270a6869808043',1,'TwccManager']]],
-  ['type_63',['type',['../group__StatusCodes.html#ga66e8134ccd2c83b700bbf4e8e6649a6f',1,'RtcSessionDescriptionInit::type'],['../structjsmntok__t.html#ac03dbd6b83cbcd979eb64702d5b9943e',1,'jsmntok_t::type'],['../structStunAttributeHeader.html#a22b99796f78a25ebe68797500f4330e6',1,'StunAttributeHeader::type']]]
+  ['twccenabled_59',['twccEnabled',['../structKvsRtpTransceiver.html#ad28378056fdd12050cbf62e918c497bc',1,'KvsRtpTransceiver']]],
+  ['twccextid_60',['twccExtId',['../structKvsPeerConnection.html#ae67d5d26809c5cb022ac12c19523b1de',1,'KvsPeerConnection']]],
+  ['twcclock_61',['twccLock',['../structKvsPeerConnection.html#a88974e9c4a3fde628ee1b203d2a7e0a8',1,'KvsPeerConnection']]],
+  ['twccseqnum_62',['twccSeqNum',['../group__StatusCodes.html#ga9a9eea90eaad8f50fc0a51483bb7b6fe',1,'TwccFeedback']]],
+  ['txbytes_63',['txBytes',['../group__StatusCodes.html#gaf6875a1a10a78980b64911cc18c69b83',1,'CongestionCtx']]],
+  ['txpackets_64',['txPackets',['../group__StatusCodes.html#gad972331b0c9a62895bd1213a64c2361c',1,'CongestionCtx']]],
+  ['type_65',['type',['../group__StatusCodes.html#ga66e8134ccd2c83b700bbf4e8e6649a6f',1,'RtcSessionDescriptionInit::type'],['../structjsmntok__t.html#ac03dbd6b83cbcd979eb64702d5b9943e',1,'jsmntok_t::type'],['../structStunAttributeHeader.html#a22b99796f78a25ebe68797500f4330e6',1,'StunAttributeHeader::type']]]
 ];
